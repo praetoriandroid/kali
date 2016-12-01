@@ -1,0 +1,304 @@
+import com.android.build.api.transform.Format
+import com.android.build.api.transform.QualifiedContent
+import com.android.build.api.transform.Transform
+import com.android.build.api.transform.TransformInvocation
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.FieldVisitor
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+
+import java.util.zip.ZipFile
+
+import static com.android.build.api.transform.QualifiedContent.DefaultContentType.CLASSES
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.2.2'
+        classpath 'org.ow2.asm:asm:5.1'
+    }
+}
+
+apply plugin: 'com.android.application'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2') {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    }
+    compile 'com.android.support:appcompat-v7:25.0.1'
+    testCompile 'junit:junit:4.12'
+}
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "25.0.0"
+
+    defaultConfig {
+        applicationId "com.example.gte"
+        minSdkVersion 14
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    registerTransform(new ClassProcessor())
+}
+
+class ClassProcessor extends Transform {
+    @Override
+    void transform(final TransformInvocation invocation) {
+        def outDir = invocation.outputProvider.getContentLocation(name, outputTypes, scopes, Format.DIRECTORY)
+
+        outDir.deleteDir()
+        outDir.mkdirs()
+
+        invocation.inputs.each { transformInput ->
+            transformInput.jarInputs.each { jarInput ->
+                println('*** JAR: ' + jarInput.file.absolutePath.replaceFirst('.*/([^/]*/[^/]*/[^/]*/[^/]*/[^/]*$)', '$1'))
+                ZipFile zip = new ZipFile(jarInput.file)
+                zip.entries().findAll { zipEntry ->
+                    !zipEntry.directory
+                }.each { zipEntry ->
+                    def outputFile = new File(outDir, zipEntry.name)
+                    outputFile.parentFile.mkdirs()
+                    if (zipEntry.name.toLowerCase().endsWith('.class')) {
+                        InputStream entryStream = zip.getInputStream(zipEntry);
+                        processClass(entryStream, outputFile)
+                        entryStream.close()
+                    } else {
+                        outputFile.bytes = zip.getInputStream(zipEntry).bytes
+                    }
+                }
+            }
+
+            transformInput.directoryInputs.each { directoryInput ->
+                int baseDirLength = directoryInput.file.absolutePath.length()
+                directoryInput.file.traverse { file ->
+                    def path = "${file.absolutePath[baseDirLength..-1]}"
+                    def outputFile = new File(outDir, path)
+
+                    if (file.isDirectory()) {
+                        outputFile.mkdirs()
+                    } else {
+                        println("*** SRC: $path")
+                        InputStream fileStream = new FileInputStream(file)//file.newInputStream();
+                        processClass(fileStream, outputFile)
+                        fileStream.close()
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("GrMethodMayBeStatic")
+    private void processClass(InputStream classStream, File outputFile) {
+        ClassReader classReader = new ClassReader(classStream)
+        ClassVisitor transformer = new WakeLockCheater()
+        classReader.accept(transformer, 0)
+        outputFile.bytes = transformer.toByteArray()
+    }
+
+    @Override
+    String getName() {
+        return WakeLockCheater.name
+    }
+
+    @Override
+    Set<QualifiedContent.ContentType> getInputTypes() {
+        return EnumSet.of(CLASSES)
+    }
+
+    @Override
+    Set<QualifiedContent.Scope> getScopes() {
+        return EnumSet.of(
+                QualifiedContent.Scope.PROJECT,
+                QualifiedContent.Scope.PROJECT_LOCAL_DEPS,
+                QualifiedContent.Scope.SUB_PROJECTS,
+                QualifiedContent.Scope.SUB_PROJECTS_LOCAL_DEPS,
+                QualifiedContent.Scope.EXTERNAL_LIBRARIES
+        )
+    }
+
+    @Override
+    Set<QualifiedContent.Scope> getReferencedScopes() {
+        return EnumSet.of(
+                QualifiedContent.Scope.PROJECT_LOCAL_DEPS,
+                QualifiedContent.Scope.SUB_PROJECTS,
+                QualifiedContent.Scope.SUB_PROJECTS_LOCAL_DEPS,
+                QualifiedContent.Scope.EXTERNAL_LIBRARIES,
+                QualifiedContent.Scope.TESTED_CODE,
+                QualifiedContent.Scope.PROVIDED_ONLY
+        )
+    }
+
+    @Override
+    boolean isIncremental() {
+        return false
+    }
+}
+
+class WakeLockCheater extends ClassVisitor {
+
+    boolean skip
+    ClassWriter classWriter
+
+    WakeLockCheater() {
+        super(Opcodes.ASM5, new ClassWriter(ClassWriter.COMPUTE_MAXS))
+        classWriter = cv
+    }
+
+    byte[] toByteArray() {
+        classWriter.toByteArray()
+    }
+
+    @Override
+    void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        super.visit(version, access, name, signature, superName, interfaces)
+        if (name == 'com/example/gte/FakeManager' || name == 'com/example/gte/FakeLock') {
+            skip = true
+        }
+        println("*** [C] $name: skip=$skip")
+    }
+
+    @Override
+    public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        if (!skip && desc == 'Landroid/os/PowerManager$WakeLock;') {
+            println("***  [F] $name: $desc")
+            desc = 'Lcom/example/gte/FakeLock;'
+        }
+        return super.visitField(access, name, desc, signature, value);
+    }
+
+    @Override
+    MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+        def originalMethodVisitor = super.visitMethod(access, name, desc, signature, exceptions)
+        if (skip) {
+            return originalMethodVisitor
+        }
+        println("***  [M] $name: $desc")
+        return new MethodVisitor(Opcodes.ASM5, originalMethodVisitor) {
+            @Override
+            void visitMethodInsn(int opcode,
+                                 String owner,
+                                 String insnName,
+                                 String insnDesc,
+                                 boolean itf) {
+                println("*** visitMethodInsn(${opName(opcode)}, $owner, $insnName, $insnDesc, $itf)")
+                if (opcode == Opcodes.INVOKEVIRTUAL && insnName == 'getSystemService' && insnDesc == '(Ljava/lang/String;)Ljava/lang/Object;' && isContext(owner)) {
+                    println("---  REPLACE method invoke")
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, 'com/example/gte/FakeManager', 'create', '(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Object;', false)
+                } else {
+                    super.visitMethodInsn(opcode, owner, insnName, insnDesc, itf)
+                }
+            }
+
+            String opName(int opcode) {
+                switch (opcode) {
+                    case Opcodes.INVOKEVIRTUAL:
+                        return 'INVOKEVIRTUAL'
+                    case Opcodes.INVOKESPECIAL:
+                        return 'INVOKESPECIAL'
+                    case Opcodes.INVOKESTATIC:
+                        return 'INVOKESTATIC'
+                    case Opcodes.INVOKEINTERFACE:
+                        return 'INVOKEINTERFACE'
+
+                    case Opcodes.ILOAD:
+                        return 'ILOAD'
+                    case Opcodes.LLOAD:
+                        return 'LLOAD'
+                    case Opcodes.FLOAD:
+                        return 'FLOAD'
+                    case Opcodes.DLOAD:
+                        return 'DLOAD'
+                    case Opcodes.ALOAD:
+                        return 'ALOAD'
+                    case Opcodes.ISTORE:
+                        return 'ISTORE'
+                    case Opcodes.LSTORE:
+                        return 'LSTORE'
+                    case Opcodes.FSTORE:
+                        return 'FSTORE'
+                    case Opcodes.DSTORE:
+                        return 'DSTORE'
+                    case Opcodes.ASTORE:
+                        return 'ASTORE'
+                    case Opcodes.RET:
+                        return 'RET'
+
+                    case Opcodes.RETURN:
+                        return 'RETURN'
+                    default:
+                        return "UNKNOWN($opcode)"
+                }
+            }
+
+            boolean isContext(String classInternalName) {
+                // I'm too lazy to check this...
+                return true
+            }
+
+            @Override
+            void visitLdcInsn(Object cst) {
+                println("*** visitLdcInsn('$cst')")
+                super.visitLdcInsn(cst)
+            }
+
+            @Override
+            void visitVarInsn(int opcode, int var) {
+                println("## visitVarInsn(${opName(opcode)}, $var)")
+                super.visitVarInsn(opcode, var)
+            }
+
+            @Override
+            void visitFieldInsn(int opcode,
+                           String owner,
+                           String fieldName,
+                           String fieldDesc) {
+                println("## visitFieldInsn(${opName(opcode)}, '$owner', '$fieldName', '$fieldDesc')")
+                super.visitFieldInsn(opcode, owner, fieldName, fieldDesc)
+            }
+
+            @Override
+            void visitLocalVariable(String insnName, String insnDesc, String insnSignature, Label start, Label end, int index) {
+                println("*** visitLocalVariable('$insnName', $insnDesc, $insnSignature, $start, $end, $index)")
+                if (insnDesc == 'Landroid/os/PowerManager$WakeLock;') {
+                    println("***  [LV] $name: $insnDesc")
+                    insnDesc = 'Lcom/example/gte/FakeLock;'
+                }
+                if (insnDesc == 'Landroid/os/PowerManager;') {
+                    println("***  [LV] $name: $insnDesc")
+                    insnDesc = 'Lcom/example/gte/FakeManager;'
+                }
+                super.visitLocalVariable(insnName, insnDesc, insnSignature, start, end, index)
+            }
+
+            @Override
+            void visitTypeInsn(int opcode, String type) {
+                if (opcode == Opcodes.CHECKCAST && type == 'android/os/PowerManager') {
+                    type = 'com/example/gte/FakeManager'
+                }
+                super.visitTypeInsn(opcode, type)
+            }
+        }
+    }
+}
