@@ -6,7 +6,6 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor
-import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
@@ -173,7 +172,7 @@ class WakeLockCheater extends ClassVisitor {
     @Override
     void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces)
-        if (name == 'com/example/gte/FakeManager' || name == 'com/example/gte/FakeLock') {
+        if (name == 'com/example/gte/FakeLock') {
             skip = true
         }
         println("*** [C] $name: skip=$skip")
@@ -181,10 +180,6 @@ class WakeLockCheater extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-        if (!skip && desc == 'Landroid/os/PowerManager$WakeLock;') {
-            println("***  [F] $name: $desc")
-            desc = 'Lcom/example/gte/FakeLock;'
-        }
         return super.visitField(access, name, desc, signature, value);
     }
 
@@ -203,24 +198,26 @@ class WakeLockCheater extends ClassVisitor {
                                  String insnDesc,
                                  boolean itf) {
                 println("*** visitMethodInsn(${opName(opcode)}, $owner, $insnName, $insnDesc, $itf)")
-                if (opcode == Opcodes.INVOKEVIRTUAL && insnName == 'getSystemService' && insnDesc == '(Ljava/lang/String;)Ljava/lang/Object;' && isContext(owner)) {
-                    println('---  REPLACE method invoke')
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, 'com/example/gte/FakeManager', 'getSystemService', '(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Object;', false)
-                } else {
-                    if (opcode == Opcodes.INVOKEVIRTUAL && owner == 'android/os/PowerManager$WakeLock') {
-                        println('---  REPLACE owner by FakeLock')
-                        owner = 'com/example/gte/FakeLock'
+                if (insnName == 'acquire' && owner == 'android/os/PowerManager$WakeLock') {
+                    owner = 'com/example/gte/FakeLock'
+                    if (insnDesc == '()V') {
+                        opcode = Opcodes.INVOKESTATIC
+                        insnDesc = '(Landroid/os/PowerManager$WakeLock)V'
+                        println("--- REPLACE owner to FakeLock and call to static acquire()")
+                    } else if (insnDesc == '(J)V') {
+                        opcode = Opcodes.INVOKESTATIC
+                        insnDesc = '(Landroid/os/PowerManager$WakeLock;J)V'
+                        println("--- REPLACE owner to FakeLock and call to static acquire(timeout)")
+                    } else {
+                        println("------ NOT REPLACED: bad aqcuire()")
                     }
-                    if (opcode == Opcodes.INVOKEVIRTUAL && insnName == 'newWakeLock' && owner == 'android/os/PowerManager') {
-                        println('---  REPLCE owner by FakeManager')
-                        owner = 'com/example/gte/FakeManager'
-                    }
-                    if (insnDesc.contains('Landroid/os/PowerManager$WakeLock;')) {
-                        println('---  REPLACE arg type or return type')
-                        insnDesc = insnDesc.replace('Landroid/os/PowerManager$WakeLock;', 'Lcom/example/gte/FakeLock;')
-                    }
-                    super.visitMethodInsn(opcode, owner, insnName, insnDesc, itf)
+                } else if (insnName == 'release' && owner == 'android/os/PowerManager$WakeLock') {
+                    opcode = Opcodes.INVOKESTATIC
+                    owner = 'com/example/gte/FakeLock'
+                    insnDesc = '(Landroid/os/PowerManager$WakeLock;)V'
+                    println("--- REPLACE owner to FakeLock call to static release()")
                 }
+                super.visitMethodInsn(opcode, owner, insnName, insnDesc, itf)
             }
 
             String opName(int opcode) {
@@ -262,54 +259,6 @@ class WakeLockCheater extends ClassVisitor {
                     default:
                         return "UNKNOWN($opcode)"
                 }
-            }
-
-            boolean isContext(String classInternalName) {
-                // I'm too lazy to check this...
-                return true
-            }
-
-            @Override
-            void visitLdcInsn(Object cst) {
-                println("*** visitLdcInsn('$cst')")
-                super.visitLdcInsn(cst)
-            }
-
-            @Override
-            void visitVarInsn(int opcode, int var) {
-                println("## visitVarInsn(${opName(opcode)}, $var)")
-                super.visitVarInsn(opcode, var)
-            }
-
-            @Override
-            void visitFieldInsn(int opcode,
-                           String owner,
-                           String fieldName,
-                           String fieldDesc) {
-                println("## visitFieldInsn(${opName(opcode)}, '$owner', '$fieldName', '$fieldDesc')")
-                super.visitFieldInsn(opcode, owner, fieldName, fieldDesc)
-            }
-
-            @Override
-            void visitLocalVariable(String insnName, String insnDesc, String insnSignature, Label start, Label end, int index) {
-                println("*** visitLocalVariable('$insnName', $insnDesc, $insnSignature, $start, $end, $index)")
-                if (insnDesc == 'Landroid/os/PowerManager$WakeLock;') {
-                    println("***  [LV] $name: $insnDesc")
-                    insnDesc = 'Lcom/example/gte/FakeLock;'
-                }
-                if (insnDesc == 'Landroid/os/PowerManager;') {
-                    println("***  [LV] $name: $insnDesc")
-                    insnDesc = 'Lcom/example/gte/FakeManager;'
-                }
-                super.visitLocalVariable(insnName, insnDesc, insnSignature, start, end, index)
-            }
-
-            @Override
-            void visitTypeInsn(int opcode, String type) {
-                if (opcode == Opcodes.CHECKCAST && type == 'android/os/PowerManager') {
-                    type = 'com/example/gte/FakeManager'
-                }
-                super.visitTypeInsn(opcode, type)
             }
         }
     }

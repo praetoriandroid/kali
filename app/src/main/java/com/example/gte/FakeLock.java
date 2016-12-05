@@ -3,56 +3,28 @@ package com.example.gte;
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.os.PowerManager;
-import android.os.WorkSource;
 import android.util.Log;
 
 public class FakeLock {
-    private final PowerManager.WakeLock wakeLock;
 
-    public FakeLock(PowerManager powerManager, int levelAndFlags, String tag) {
-        Log.d("###", "WL.newWakeLock(" + levelAndFlags + ", '" + tag + "')");
-        wakeLock = powerManager.newWakeLock(levelAndFlags, tag);
-    }
-
-    public void acquire(long timeout) {
-        Log.d("###", "WL.acquire(" + timeout + ")");
+    public static void acquire(PowerManager.WakeLock wakeLock, long timeout) {
+        Log.d("###", "static acquire(" + timeout + ")");
         wakeLock.acquire(timeout);
     }
 
-    public void acquire() {
-        Log.d("###", "WL.acquire()");
+    public static void acquire(PowerManager.WakeLock wakeLock) {
+        Log.d("###", "static acquire()");
         wakeLock.acquire();
     }
 
-    public boolean isHeld() {
-        boolean result = wakeLock.isHeld();
-        Log.d("###", "WL.isHeld(): " + result);
-        return result;
-    }
-
-    public void release() {
-        Log.d("###", "WL.release()");
-        wakeLock.release();
-    }
-
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public void release(int flags) {
-        Log.d("###", "WL.release(" + flags + ")");
+    public static void release(PowerManager.WakeLock wakeLock, int flags) {
+        Log.d("###", "static release(" + flags + ")");
         wakeLock.release(flags);
     }
 
-    public void setReferenceCounted(boolean value) {
-        Log.d("###", "setReferenceCounted(" + value + ")");
-        wakeLock.setReferenceCounted(value);
-    }
-
-    public void setWorkSource(WorkSource ws) {
-        Log.d("###", "setWorkSource(" + ws + ")");
-        wakeLock.setWorkSource(ws);
-    }
-
-    @Override
-    public String toString() {
-        return wakeLock.toString();
+    public static void release(PowerManager.WakeLock wakeLock) {
+        Log.d("###", "static release()");
+        wakeLock.release();
     }
 }
