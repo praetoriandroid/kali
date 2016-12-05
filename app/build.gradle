@@ -204,9 +204,21 @@ class WakeLockCheater extends ClassVisitor {
                                  boolean itf) {
                 println("*** visitMethodInsn(${opName(opcode)}, $owner, $insnName, $insnDesc, $itf)")
                 if (opcode == Opcodes.INVOKEVIRTUAL && insnName == 'getSystemService' && insnDesc == '(Ljava/lang/String;)Ljava/lang/Object;' && isContext(owner)) {
-                    println("---  REPLACE method invoke")
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, 'com/example/gte/FakeManager', 'create', '(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Object;', false)
+                    println('---  REPLACE method invoke')
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, 'com/example/gte/FakeManager', 'getSystemService', '(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Object;', false)
                 } else {
+                    if (opcode == Opcodes.INVOKEVIRTUAL && owner == 'android/os/PowerManager$WakeLock') {
+                        println('---  REPLACE owner by FakeLock')
+                        owner = 'com/example/gte/FakeLock'
+                    }
+                    if (opcode == Opcodes.INVOKEVIRTUAL && insnName == 'newWakeLock' && owner == 'android/os/PowerManager') {
+                        println('---  REPLCE owner by FakeManager')
+                        owner = 'com/example/gte/FakeManager'
+                    }
+                    if (insnDesc.contains('Landroid/os/PowerManager$WakeLock;')) {
+                        println('---  REPLACE arg type or return type')
+                        insnDesc = insnDesc.replace('Landroid/os/PowerManager$WakeLock;', 'Lcom/example/gte/FakeLock;')
+                    }
                     super.visitMethodInsn(opcode, owner, insnName, insnDesc, itf)
                 }
             }
