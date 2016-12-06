@@ -21,7 +21,6 @@ class WrapperTransformer extends Transform {
 
         invocation.inputs.each { transformInput ->
             transformInput.jarInputs.each { jarInput ->
-                println('*** JAR: ' + jarInput.file.absolutePath.replaceFirst('.*/([^/]*/[^/]*/[^/]*/[^/]*/[^/]*$)', '$1'))
                 ZipFile zip = new ZipFile(jarInput.file)
                 zip.entries().findAll { zipEntry ->
                     !zipEntry.directory
@@ -47,7 +46,6 @@ class WrapperTransformer extends Transform {
                     if (file.isDirectory()) {
                         outputFile.mkdirs()
                     } else {
-                        println("*** SRC: $path")
                         InputStream fileStream = new FileInputStream(file)//file.newInputStream();
                         processClass(fileStream, outputFile)
                         fileStream.close()
