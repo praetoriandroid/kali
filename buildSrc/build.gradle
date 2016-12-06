@@ -1,0 +1,9 @@
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile 'org.ow2.asm:asm:5.1'
+    compile 'com.android.tools.build:gradle:2.2.2'
+}
