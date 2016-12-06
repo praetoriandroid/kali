@@ -12,6 +12,40 @@ import static com.android.build.api.transform.QualifiedContent.DefaultContentTyp
 import java.util.zip.ZipFile
 
 class WrapperTransformer extends Transform {
+
+    String ignoreClass
+    Map<CallDescription, Replacement> replacements
+
+    WrapperTransformer(String ignoreClass, Map<String, String> replacements) {
+        this.ignoreClass = ignoreClass
+        this.replacements = [:]
+        replacements.each { key, value ->
+            int descIndex = key.indexOf('(')
+            if (descIndex == -1) {
+                throw new IllegalArgumentException("Bad replaceable method specification: $key")
+            }
+            def replaceableDesc = key[descIndex..-1]
+            def method = key[0..descIndex - 1]
+            int methodNameIndex = method.lastIndexOf('.')
+            if (methodNameIndex == -1) {
+                throw new IllegalArgumentException("Bad replaceable method specification: $key")
+            }
+            def replaceableClass = method[0..methodNameIndex - 1].replace('.', '/')
+            def replaceableMethod = method[methodNameIndex + 1..-1]
+            def replaceable = new CallDescription(owner: replaceableClass, methodName: replaceableMethod, desc: replaceableDesc)
+
+            methodNameIndex = value.lastIndexOf('.')
+            if (methodNameIndex == -1) {
+                throw new IllegalArgumentException("Bad replacement method specification: $value")
+            }
+            def replacementClass = value[0..methodNameIndex - 1].replace('.', '/')
+            def replacementMethod = value[methodNameIndex + 1..-1]
+            def replacement = new Replacement(owner: replacementClass, methodName: replacementMethod)
+
+            this.replacements[replaceable] = replacement
+        }
+    }
+
     @Override
     void transform(final TransformInvocation invocation) {
         def outDir = invocation.outputProvider.getContentLocation(name, outputTypes, scopes, Format.DIRECTORY)
@@ -58,7 +92,7 @@ class WrapperTransformer extends Transform {
     @SuppressWarnings("GrMethodMayBeStatic")
     private void processClass(InputStream classStream, File outputFile) {
         ClassReader classReader = new ClassReader(classStream)
-        ClassVisitor transformer = new StaticWrapper()
+        ClassVisitor transformer = new StaticWrapper(ignoreClass, replacements)
 
         classReader.accept(transformer, 0)
         outputFile.bytes = transformer.toByteArray()

@@ -45,5 +45,9 @@ android {
         }
     }
 
-    registerTransform(new WrapperTransformer())
+    registerTransform(new WrapperTransformer('com.example.gte.FakeLock', [
+            'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.acquire',
+            'android.os.PowerManager$WakeLock.acquire()V': 'com.example.gte.FakeLock.acquire',
+            'android.os.PowerManager$WakeLock.release()V': 'com.example.gte.FakeLock.release'
+    ]))
 }
