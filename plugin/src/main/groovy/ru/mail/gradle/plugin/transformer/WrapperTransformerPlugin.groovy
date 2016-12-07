@@ -3,7 +3,7 @@ package ru.mail.gradle.plugin.transformer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-public class WrapperTransformerPlugin implements Plugin<Project> {
+class WrapperTransformerPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
@@ -11,18 +11,17 @@ public class WrapperTransformerPlugin implements Plugin<Project> {
                 !project.pluginManager.findPlugin('com.android.application')) {
             throw new IllegalStateException('Either com.android.application or com.android.library plugin is required')
         }
-        project.android.registerTransform(new WrapperTransformer('com.example.gte.FakeLock', [
-                'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.acquire',
-                'android.os.PowerManager$WakeLock.acquire()V': 'com.example.gte.FakeLock.acquire',
-                'android.os.PowerManager$WakeLock.release()V': 'com.example.gte.FakeLock.release'
-        ]))
 
-        println('hello!')
-        def task = project.tasks.create('foo') << {
-            def adb = project.android.adbExe as String
-            println "$adb devices".execute().text
+        project.extensions.create('transformer', WrapperTransformerPluginExtension)
+
+
+        WrapperTransformer transformer = new WrapperTransformer()
+        project.android.registerTransform(transformer)
+
+        project.afterEvaluate {
+            def ignoreClass = project.extensions.transformer.ignoreClass
+            def replacements = project.extensions.transformer.replacements
+            transformer.configure(ignoreClass, replacements)
         }
-        task.group = 'wrapperplugin'
-        task.description = 'An example task'
     }
 }

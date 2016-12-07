@@ -16,7 +16,7 @@ class WrapperTransformer extends Transform {
     String ignoreClass
     Map<CallDescription, Replacement> replacements
 
-    WrapperTransformer(String ignoreClass, Map<String, String> replacements) {
+    void configure(String ignoreClass, Map<String, String> replacements) {
         this.ignoreClass = ignoreClass
         this.replacements = [:]
         replacements.each { key, value ->

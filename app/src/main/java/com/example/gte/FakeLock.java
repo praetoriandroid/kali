@@ -7,23 +7,23 @@ import android.util.Log;
 
 public class FakeLock {
 
-    public static void acquire(PowerManager.WakeLock wakeLock, long timeout) {
+    public static void verboseAcquire(PowerManager.WakeLock wakeLock, long timeout) {
         Log.d("###", "static acquire(" + timeout + ")");
         wakeLock.acquire(timeout);
     }
 
-    public static void acquire(PowerManager.WakeLock wakeLock) {
+    public static void verboseAcquire(PowerManager.WakeLock wakeLock) {
         Log.d("###", "static acquire()");
         wakeLock.acquire();
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public static void release(PowerManager.WakeLock wakeLock, int flags) {
+    public static void verboseRelease(PowerManager.WakeLock wakeLock, int flags) {
         Log.d("###", "static release(" + flags + ")");
         wakeLock.release(flags);
     }
 
-    public static void release(PowerManager.WakeLock wakeLock) {
+    public static void verboseRelease(PowerManager.WakeLock wakeLock) {
         Log.d("###", "static release()");
         wakeLock.release();
     }
