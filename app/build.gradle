@@ -1,17 +1,20 @@
-import ru.mail.gradle.plugin.transformer.WrapperTransformer
-
 buildscript {
     repositories {
         mavenCentral()
         jcenter()
+        maven {
+            url uri('../plugin/build/repo')
+        }
     }
 
     dependencies {
         classpath 'com.android.tools.build:gradle:2.2.2'
+        classpath 'ru.mail:android-transformer-gradle-plugin:0.1'
     }
 }
 
 apply plugin: 'com.android.application'
+apply plugin: 'ru.mail.android-transformer'
 
 repositories {
     jcenter()
@@ -44,10 +47,4 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
-    registerTransform(new WrapperTransformer('com.example.gte.FakeLock', [
-            'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.acquire',
-            'android.os.PowerManager$WakeLock.acquire()V': 'com.example.gte.FakeLock.acquire',
-            'android.os.PowerManager$WakeLock.release()V': 'com.example.gte.FakeLock.release'
-    ]))
 }
