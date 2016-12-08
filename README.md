@@ -1,8 +1,8 @@
-android-gradle-transform-example
-================================
-### An Android Gradle [Transform API](http://tools.android.com/tech-docs/new-build-system/transform-api) and [Gradle Plugin](https://docs.gradle.org/current/userguide/custom_plugins.html) example
+android-transform-gradle-plugin
+===============================
+### An Android [Transform](http://tools.android.com/tech-docs/new-build-system/transform-api) [Gradle Plugin](https://docs.gradle.org/current/userguide/custom_plugins.html)
 
-The intent was to wrap [WakeLock](https://developer.android.com/reference/android/os/PowerManager.WakeLock.html) calls, including those that are in the libraries, to make some behaviour changes. So, here it is...
+The initial intent was to wrap [WakeLock](https://developer.android.com/reference/android/os/PowerManager.WakeLock.html) calls, including those that are in the libraries, to make some behaviour changes. So, here it is...
 
 ### What is does?
 If you want to replace, for example, all [`PowerManager.WakeLock.acquire(timeout)`](https://developer.android.com/reference/android/os/PowerManager.WakeLock.html#acquire()) calls in your application, including those in any used library, by your own custom static calls like this:
