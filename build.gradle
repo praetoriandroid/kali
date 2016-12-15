@@ -3,3 +3,7 @@
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+ext {
+    thePluginVersion = '1.0'
+}

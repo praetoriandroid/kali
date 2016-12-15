@@ -31,7 +31,7 @@ uploadArchives {
             repository(url: uri('build/repo'))
             pom.groupId = 'ru.mail'
             pom.artifactId = 'android-transformer-gradle-plugin'
-            pom.version = '1.0'
+            pom.version = thePluginVersion
         }
     }
 }

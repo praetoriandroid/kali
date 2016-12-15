@@ -9,7 +9,7 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:2.2.2'
-        classpath 'ru.mail:android-transformer-gradle-plugin:0.1'
+        classpath "ru.mail:android-transformer-gradle-plugin:$thePluginVersion"
     }
 }
 
