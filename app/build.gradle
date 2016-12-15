@@ -51,10 +51,9 @@ android {
 
 transformer {
     ignoreClass 'com.example.gte.FakeLock'
-    def wakeLockWrappers = [
+    replacements = [
             'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.verboseAcquire',
             'android.os.PowerManager$WakeLock.acquire()V': 'com.example.gte.FakeLock.verboseAcquire',
             'android.os.PowerManager$WakeLock.release()V': 'com.example.gte.FakeLock.verboseRelease'
-            ]
-    replacements wakeLockWrappers
+    ]
 }
