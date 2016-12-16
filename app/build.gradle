@@ -9,12 +9,13 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:2.2.2'
-        classpath "ru.mail:android-transformer-gradle-plugin:$thePluginVersion"
+        if (file(PREBUILT_PLUGIN_DIR).exists()) {
+            classpath "ru.mail:android-transformer-gradle-plugin:$thePluginVersion"
+        }
     }
 }
 
 apply plugin: 'com.android.application'
-apply plugin: 'ru.mail.android-transformer'
 
 repositories {
     jcenter()
@@ -49,11 +50,24 @@ android {
     }
 }
 
-transformer {
-    ignoreClass 'com.example.gte.FakeLock'
-    replacements = [
-            'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.verboseAcquire',
-            'android.os.PowerManager$WakeLock.acquire()V': 'com.example.gte.FakeLock.verboseAcquire',
-            'android.os.PowerManager$WakeLock.release()V': 'com.example.gte.FakeLock.verboseRelease'
-    ]
+if (file(PREBUILT_PLUGIN_DIR).exists()) {
+
+    apply plugin: 'ru.mail.android-transformer'
+
+    transformer {
+        ignoreClass 'com.example.gte.FakeLock'
+        replacements = [
+                'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.verboseAcquire',
+                'android.os.PowerManager$WakeLock.acquire()V': 'com.example.gte.FakeLock.verboseAcquire',
+                'android.os.PowerManager$WakeLock.release()V': 'com.example.gte.FakeLock.verboseRelease'
+        ]
+    }
+
+} else {
+    logger.warn '\n*** WARNING ***\n' +
+            '  Prebuilt plugin was not found\n' +
+            '  To apply the transformations you need to run:\n' +
+            '    ./gradlew :plugin:uploadArchives\n' +
+            '  And then rebuild the app project:\n' +
+            '    ./gradlew :app:clean :app:assembleDebug\n'
 }
