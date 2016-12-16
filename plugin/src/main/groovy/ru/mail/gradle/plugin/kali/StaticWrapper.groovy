@@ -1,24 +1,17 @@
 package ru.mail.gradle.plugin.kali
 
-import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
-class StaticWrapper extends ClassVisitor {
+class StaticWrapper extends BaseTransformer {
 
     boolean ignore
     String ignoreClass
     Map<CallDescription, Replacement> replacements
 
     public StaticWrapper(String ignoreClass, Map<CallDescription, Replacement> replacements) {
-        super(Opcodes.ASM5, new ClassWriter(ClassWriter.COMPUTE_MAXS))
         this.ignoreClass = ignoreClass.replace('.', '/')
         this.replacements = replacements
-    }
-
-    byte[] toByteArray() {
-        cv.toByteArray()
     }
 
     @Override

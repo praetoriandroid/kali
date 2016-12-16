@@ -13,14 +13,14 @@ class WrapperTransformerPlugin implements Plugin<Project> {
         }
 
         project.extensions.create('kali', WrapperTransformerPluginExtension)
-
+        project.kali.extensions.create('replaceCalls', StaticWrapperExtension)
 
         WrapperTransformer transformer = new WrapperTransformer()
         project.android.registerTransform(transformer)
 
         project.afterEvaluate {
-            def ignoreClass = project.extensions.kali.ignoreClass
-            def replacements = project.extensions.kali.replacements
+            def ignoreClass = project.kali.replaceCalls.ignoreClass
+            def replacements = project.kali.replaceCalls.replacements
             transformer.configure(ignoreClass, replacements)
         }
     }

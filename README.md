@@ -35,11 +35,13 @@ buildscript {
 apply plugin: 'ru.mail.android-kali'
 
 kali {
-    ignoreClass 'com.example.kali.FakeLock'
-    def wakeLockWrappers = [
-            'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.kali.FakeLock.smartAcquire'
-    ]
-    replacements wakeLockWrappers
+    replaceCalls {
+        ignoreClass 'com.example.kali.FakeLock'
+        def wakeLockWrappers = [
+                'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.kali.FakeLock.smartAcquire'
+        ]
+        replacements wakeLockWrappers
+    }
 }
 ```
 
