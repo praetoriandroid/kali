@@ -30,7 +30,7 @@ uploadArchives {
         mavenDeployer {
             repository(url: uri('build/repo'))
             pom.groupId = 'ru.mail'
-            pom.artifactId = 'android-transformer-gradle-plugin'
+            pom.artifactId = 'android-kali'
             pom.version = thePluginVersion
         }
     }

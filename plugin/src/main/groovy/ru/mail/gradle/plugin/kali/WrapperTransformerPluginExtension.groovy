@@ -1,4 +1,4 @@
-package ru.mail.gradle.plugin.transformer
+package ru.mail.gradle.plugin.kali
 
 class WrapperTransformerPluginExtension {
     String ignoreClass

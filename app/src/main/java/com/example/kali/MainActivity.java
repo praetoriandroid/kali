@@ -1,4 +1,4 @@
-package com.example.gte;
+package com.example.kali;
 
 import android.os.Bundle;
 import android.os.PowerManager;

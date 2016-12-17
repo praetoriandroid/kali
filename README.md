@@ -1,13 +1,13 @@
-android-transform-gradle-plugin
-===============================
-### An Android [Transform](http://tools.android.com/tech-docs/new-build-system/transform-api) [Gradle Plugin](https://docs.gradle.org/current/userguide/custom_plugins.html)
+kali
+====
+### The Customizable Android [Transform](http://tools.android.com/tech-docs/new-build-system/transform-api) [Gradle Plugin](https://docs.gradle.org/current/userguide/custom_plugins.html)
 
-The initial intent was to wrap [WakeLock](https://developer.android.com/reference/android/os/PowerManager.WakeLock.html) calls, including those that are in the libraries, to make some behaviour changes. So, here it is...
+The initial intent was to wrap [WakeLock](https://developer.android.com/reference/android/os/PowerManager.WakeLock.html) calls, including those that are in the libraries, to make some behaviour changes. Then we decided to add some more transformations. So, here it is...
 
 ### What is does?
 If you want to replace, for example, all [`PowerManager.WakeLock.acquire(timeout)`](https://developer.android.com/reference/android/os/PowerManager.WakeLock.html#acquire()) calls in your application, including those in any used library, by your own custom static calls like this:
 ```java
-package com.example.gte;
+package com.example.kali;
 
 public class FakeLock {
     // ...
@@ -28,16 +28,16 @@ buildscript {
 
     dependencies {
         // ...
-        classpath 'ru.mail:android-transformer-gradle-plugin:1.0'
+        classpath 'ru.mail:android-kali:1.0'
     }
 }
 
-apply plugin: 'ru.mail.android-transformer'
+apply plugin: 'ru.mail.android-kali'
 
-transformer {
-    ignoreClass 'com.example.gte.FakeLock'
+kali {
+    ignoreClass 'com.example.kali.FakeLock'
     def wakeLockWrappers = [
-            'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.smartAcquire'
+            'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.kali.FakeLock.smartAcquire'
     ]
     replacements wakeLockWrappers
 }

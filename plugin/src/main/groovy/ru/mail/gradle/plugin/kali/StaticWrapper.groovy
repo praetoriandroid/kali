@@ -1,4 +1,4 @@
-package ru.mail.gradle.plugin.transformer
+package ru.mail.gradle.plugin.kali
 
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter

@@ -10,7 +10,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:2.2.2'
         if (file(PREBUILT_PLUGIN_DIR).exists()) {
-            classpath "ru.mail:android-transformer-gradle-plugin:$thePluginVersion"
+            classpath "ru.mail:android-kali:$thePluginVersion"
         }
     }
 }
@@ -35,7 +35,7 @@ android {
     buildToolsVersion "25.0.0"
 
     defaultConfig {
-        applicationId "com.example.gte"
+        applicationId "com.example.kali"
         minSdkVersion 14
         targetSdkVersion 23
         versionCode 1
@@ -52,14 +52,14 @@ android {
 
 if (file(PREBUILT_PLUGIN_DIR).exists()) {
 
-    apply plugin: 'ru.mail.android-transformer'
+    apply plugin: 'ru.mail.android-kali'
 
-    transformer {
-        ignoreClass 'com.example.gte.FakeLock'
+    kali {
+        ignoreClass 'com.example.kali.FakeLock'
         replacements = [
-                'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.gte.FakeLock.verboseAcquire',
-                'android.os.PowerManager$WakeLock.acquire()V': 'com.example.gte.FakeLock.verboseAcquire',
-                'android.os.PowerManager$WakeLock.release()V': 'com.example.gte.FakeLock.verboseRelease'
+                'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.kali.FakeLock.verboseAcquire',
+                'android.os.PowerManager$WakeLock.acquire()V': 'com.example.kali.FakeLock.verboseAcquire',
+                'android.os.PowerManager$WakeLock.release()V': 'com.example.kali.FakeLock.verboseRelease'
         ]
     }
 
