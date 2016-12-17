@@ -63,6 +63,7 @@ if (file(PREBUILT_PLUGIN_DIR).exists()) {
                     'android.os.PowerManager$WakeLock.release()V' : 'com.example.kali.FakeLock.verboseRelease'
             ]
         }
+        makeAllFieldsPublic true
     }
 
 } else {

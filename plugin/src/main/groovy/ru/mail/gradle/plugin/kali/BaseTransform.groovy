@@ -6,45 +6,26 @@ import com.android.build.api.transform.Transform
 import com.android.build.api.transform.TransformInvocation
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
 
 import static com.android.build.api.transform.QualifiedContent.DefaultContentType.CLASSES
 
 import java.util.zip.ZipFile
 
-class WrapperTransformer extends Transform {
+import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 
-    String ignoreClass
-    Map<CallDescription, Replacement> replacements
+abstract class BaseTransform extends Transform {
 
-    void configure(String ignoreClass, Map<String, String> replacements) {
-        this.ignoreClass = ignoreClass
-        this.replacements = [:]
-        replacements.each { key, value ->
-            int descIndex = key.indexOf('(')
-            if (descIndex == -1) {
-                throw new IllegalArgumentException("Bad replaceable method specification: $key")
-            }
-            def replaceableDesc = key[descIndex..-1]
-            def method = key[0..descIndex - 1]
-            int methodNameIndex = method.lastIndexOf('.')
-            if (methodNameIndex == -1) {
-                throw new IllegalArgumentException("Bad replaceable method specification: $key")
-            }
-            def replaceableClass = method[0..methodNameIndex - 1].replace('.', '/')
-            def replaceableMethod = method[methodNameIndex + 1..-1]
-            def replaceable = new CallDescription(owner: replaceableClass, methodName: replaceableMethod, desc: replaceableDesc)
+    final String name
+    boolean apply
 
-            methodNameIndex = value.lastIndexOf('.')
-            if (methodNameIndex == -1) {
-                throw new IllegalArgumentException("Bad replacement method specification: $value")
-            }
-            def replacementClass = value[0..methodNameIndex - 1].replace('.', '/')
-            def replacementMethod = value[methodNameIndex + 1..-1]
-            def replacement = new Replacement(owner: replacementClass, methodName: replacementMethod)
-
-            this.replacements[replaceable] = replacement
-        }
+    BaseTransform(String name) {
+        this.name = name
     }
+
+    abstract void configure(Map params)
+
+    abstract BaseClassProcessor createClassProcessor()
 
     @Override
     void transform(final TransformInvocation invocation) {
@@ -89,18 +70,16 @@ class WrapperTransformer extends Transform {
         }
     }
 
-    @SuppressWarnings("GrMethodMayBeStatic")
-    private void processClass(InputStream classStream, File outputFile) {
+    void processClass(InputStream classStream, File outputFile) {
         ClassReader classReader = new ClassReader(classStream)
-        ClassVisitor transformer = new StaticWrapper(ignoreClass, replacements)
-
-        classReader.accept(transformer, 0)
-        outputFile.bytes = transformer.toByteArray()
+        ClassVisitor processor = apply ? createClassProcessor() : new ClassWriter(COMPUTE_MAXS)
+        classReader.accept(processor, 0)
+        outputFile.bytes = processor.toByteArray()
     }
 
     @Override
     String getName() {
-        return StaticWrapper.name
+        return name
     }
 
     @Override

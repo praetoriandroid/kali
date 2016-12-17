@@ -3,7 +3,7 @@ package ru.mail.gradle.plugin.kali
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
-class StaticWrapper extends BaseTransformer {
+class StaticWrapper extends BaseClassProcessor {
 
     boolean ignore
     String ignoreClass

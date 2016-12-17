@@ -15,13 +15,20 @@ class WrapperTransformerPlugin implements Plugin<Project> {
         project.extensions.create('kali', WrapperTransformerPluginExtension)
         project.kali.extensions.create('replaceCalls', StaticWrapperExtension)
 
-        WrapperTransformer transformer = new WrapperTransformer()
-        project.android.registerTransform(transformer)
+        BaseTransform staticWrapperTransform = new StaticWrapperTransform()
+        project.android.registerTransform(staticWrapperTransform)
+
+        BaseTransform fieldExposerTransform = new FieldExposerTransform()
+        // FIXME Both transforms fail to apply
+//        project.android.registerTransform(fieldExposerTransform)
 
         project.afterEvaluate {
             def ignoreClass = project.kali.replaceCalls.ignoreClass
             def replacements = project.kali.replaceCalls.replacements
-            transformer.configure(ignoreClass, replacements)
+            staticWrapperTransform.configure(ignoreClass: ignoreClass, replacements: replacements)
+
+            def makeAllFieldsPublic = project.kali.makeAllFieldsPublic
+            fieldExposerTransform.configure(makeAllFieldsPublic: makeAllFieldsPublic)
         }
     }
 }
