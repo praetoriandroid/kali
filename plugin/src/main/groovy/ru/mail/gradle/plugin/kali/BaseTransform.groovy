@@ -25,7 +25,7 @@ abstract class BaseTransform extends Transform {
 
     abstract void configure(Map params)
 
-    abstract BaseClassProcessor createClassProcessor()
+    abstract BaseClassProcessor createClassProcessor(PreparedInfo info)
 
     @Override
     void transform(final TransformInvocation invocation) {
@@ -33,6 +33,36 @@ abstract class BaseTransform extends Transform {
 
         outDir.deleteDir()
         outDir.mkdirs()
+
+        def preparedInfoBuilder = new PreparedInfo.Builder()
+
+        invocation.inputs.each { transformInput ->
+            transformInput.jarInputs.each { jarInput ->
+                ZipFile zip = new ZipFile(jarInput.file)
+                zip.entries().findAll { zipEntry ->
+                    !zipEntry.directory
+                }.each { zipEntry ->
+                    if (zipEntry.name.toLowerCase().endsWith('.class')) {
+                        InputStream entryStream = zip.getInputStream(zipEntry);
+                        preProcessClass(entryStream, preparedInfoBuilder)
+                        entryStream.close()
+                    }
+                }
+            }
+
+            transformInput.directoryInputs.each { directoryInput ->
+                directoryInput.file.traverse { file ->
+                    if (file.isDirectory()) {
+                    } else {
+                        InputStream fileStream = new FileInputStream(file)//file.newInputStream();
+                        preProcessClass(fileStream, preparedInfoBuilder)
+                        fileStream.close()
+                    }
+                }
+            }
+        }
+
+        def preparedInfo = preparedInfoBuilder.build()
 
         invocation.inputs.each { transformInput ->
             transformInput.jarInputs.each { jarInput ->
@@ -44,7 +74,7 @@ abstract class BaseTransform extends Transform {
                     outputFile.parentFile.mkdirs()
                     if (zipEntry.name.toLowerCase().endsWith('.class')) {
                         InputStream entryStream = zip.getInputStream(zipEntry);
-                        processClass(entryStream, outputFile)
+                        processClass(entryStream, outputFile, preparedInfo)
                         entryStream.close()
                     } else {
                         outputFile.bytes = zip.getInputStream(zipEntry).bytes
@@ -62,7 +92,7 @@ abstract class BaseTransform extends Transform {
                         outputFile.mkdirs()
                     } else {
                         InputStream fileStream = new FileInputStream(file)//file.newInputStream();
-                        processClass(fileStream, outputFile)
+                        processClass(fileStream, outputFile, preparedInfo)
                         fileStream.close()
                     }
                 }
@@ -70,11 +100,20 @@ abstract class BaseTransform extends Transform {
         }
     }
 
-    void processClass(InputStream classStream, File outputFile) {
+    void processClass(InputStream classStream, File outputFile, PreparedInfo preparedInfo) {
         ClassReader classReader = new ClassReader(classStream)
-        ClassVisitor processor = apply ? createClassProcessor() : new ClassWriter(COMPUTE_MAXS)
+        ClassVisitor processor = apply ? createClassProcessor(preparedInfo) : new ClassWriter(COMPUTE_MAXS)
         classReader.accept(processor, 0)
         outputFile.bytes = processor.toByteArray()
+    }
+
+    void preProcessClass(InputStream classStream, PreparedInfo.Builder builder) {
+        def classReader = new ClassReader(classStream)
+        def transformer = new PrepareVisitor()
+
+        classReader.accept(transformer, 0)
+
+        builder.addClass(transformer.build())
     }
 
     @Override

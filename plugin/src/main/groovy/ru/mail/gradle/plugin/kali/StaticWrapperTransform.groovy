@@ -74,7 +74,7 @@ public class StaticWrapperTransform extends BaseTransform {
     }
 
     @Override
-    BaseClassProcessor createClassProcessor() {
-        new StaticWrapper(ignoreClasses, replacements, replacementsRegex)
+    BaseClassProcessor createClassProcessor(PreparedInfo info) {
+        new StaticWrapper(ignoreClasses, replacements, replacementsRegex, info)
     }
 }

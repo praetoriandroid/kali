@@ -12,7 +12,7 @@ public class FieldExposerTransform extends BaseTransform {
     }
 
     @Override
-    BaseClassProcessor createClassProcessor() {
+    BaseClassProcessor createClassProcessor(PreparedInfo info) {
         new FieldExposer()
     }
 }

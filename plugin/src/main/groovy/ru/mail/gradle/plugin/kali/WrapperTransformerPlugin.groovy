@@ -31,6 +31,12 @@ class WrapperTransformerPlugin implements Plugin<Project> {
 
             def makeAllFieldsPublic = project.kali.makeAllFieldsPublic
             fieldExposerTransform.configure(makeAllFieldsPublic: makeAllFieldsPublic)
+
+            project.tasks.findAll {
+                it.name.startsWith('transformClassesWithStaticWrapperFor')
+            }.each {
+                it.outputs.upToDateWhen {false}
+            }
         }
     }
 }
