@@ -61,10 +61,11 @@ if (file(PREBUILT_PLUGIN_DIR).exists()) {
                     'com.example.kali.ActivityLogger'
             ]
             replacements = [
-                    'android.os.PowerManager$WakeLock.acquire(J)V'    : 'com.example.kali.FakeLock.verboseAcquire',
-                    'android.os.PowerManager$WakeLock.acquire()V'     : 'com.example.kali.FakeLock.verboseAcquire',
-                    'android.os.PowerManager$WakeLock.release()V'     : 'com.example.kali.FakeLock.verboseRelease',
-                    'com.example.kali.MainActivity.setContentView(I)V': 'com.example.kali.ActivityLogger.setContentView(Landroid/app/Activity;I)V'
+                    'android.os.PowerManager$WakeLock.release()V': 'com.example.kali.FakeLock.verboseRelease',
+            ]
+            replacementsRegex = [
+                    'android.os.PowerManager\\$WakeLock acquire \\(.+\\)V': 'com.example.kali.FakeLock.verboseAcquire',
+                    '.*Activity setContentView \\(I\\)V'                  : 'com.example.kali.ActivityLogger.setContentView(Landroid/app/Activity;I)V'
             ]
         }
         makeAllFieldsPublic true

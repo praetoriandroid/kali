@@ -25,7 +25,9 @@ class WrapperTransformerPlugin implements Plugin<Project> {
         project.afterEvaluate {
             def ignoreClasses = project.kali.replaceCalls.ignoreClasses
             def replacements = project.kali.replaceCalls.replacements
-            staticWrapperTransform.configure(ignoreClasses: ignoreClasses, replacements: replacements)
+            def replacementsRegex = project.kali.replaceCalls.replacementsRegex
+            staticWrapperTransform.configure(ignoreClasses: ignoreClasses,
+                    replacements: replacements, replacementsRegex: replacementsRegex)
 
             def makeAllFieldsPublic = project.kali.makeAllFieldsPublic
             fieldExposerTransform.configure(makeAllFieldsPublic: makeAllFieldsPublic)

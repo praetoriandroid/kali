@@ -3,7 +3,8 @@ package ru.mail.gradle.plugin.kali
 public class StaticWrapperTransform extends BaseTransform {
 
     Set<String> ignoreClasses
-    Map<CallDescription, Replacement> replacements
+    List<Replacement> replacements
+    List<Replacement> replacementsRegex
 
     StaticWrapperTransform() {
         super('staticWrapper')
@@ -13,51 +14,67 @@ public class StaticWrapperTransform extends BaseTransform {
     void configure(Map params) {
         def ignoreClasses = params['ignoreClasses']
         def replacements = params['replacements']
-        if (ignoreClasses == null || replacements == null) {
+        def replacementsRegex = params['replacementsRegex']
+        if (!ignoreClasses || (!replacements && !replacementsRegex)) {
             return
         }
 
         this.ignoreClasses = ignoreClasses.collect {
             it.replace('.', '/')
         }
-        this.replacements = [:]
+
+        this.replacements = []
         replacements.each { key, value ->
-            int descIndex = key.indexOf('(')
-            if (descIndex == -1) {
-                throw new IllegalArgumentException("Bad replaceable method specification: $key")
-            }
-            def replaceableDesc = key[descIndex..-1]
-            def method = key[0..descIndex - 1]
-            int methodNameIndex = method.lastIndexOf('.')
-            if (methodNameIndex == -1) {
-                throw new IllegalArgumentException("Bad replaceable method specification: $key")
-            }
-            def replaceableClass = method[0..methodNameIndex - 1].replace('.', '/')
-            def replaceableMethod = method[methodNameIndex + 1..-1]
-            def replaceable = new CallDescription(owner: replaceableClass, methodName: replaceableMethod, desc: replaceableDesc)
+            def replaceable = parseDescriptor(key)
+            def replacement = parseDescriptor(value)
+            this.replacements << new Replacement(from: replaceable, to: replacement)
+            apply = true
+        }
 
-            methodNameIndex = value.lastIndexOf('.')
-            if (methodNameIndex == -1) {
-                throw new IllegalArgumentException("Bad replacement method specification: $value")
-            }
-            def replacementClass = value[0..methodNameIndex - 1].replace('.', '/')
-            descIndex = value.indexOf('(')
-            def methodNameEnd = descIndex >= 0 ? descIndex - 1 : descIndex
-            def replacementMethod = value[methodNameIndex + 1..methodNameEnd]
-            if (descIndex != -1 && value.indexOf(')', descIndex) == -1) {
-                throw new IllegalArgumentException("Replacement with broken arguments description: $value")
-            }
-            def replacementDesc = descIndex == -1 ? null : value[descIndex..-1]
-            def replacement = new Replacement(owner: replacementClass, methodName: replacementMethod, descriptor: replacementDesc)
-
-            this.replacements[replaceable] = replacement
-
+        this.replacementsRegex = []
+        replacementsRegex.each { key, value ->
+            def replaceable = parseDescriptorRegex(key)
+            def replacement = parseDescriptor(value, false)
+            this.replacementsRegex << new Replacement(from: replaceable, to:  replacement)
             apply = true
         }
     }
 
+    static InvokeDescriptor parseDescriptor(String fullInvokeDescriptor, boolean mandatoryDescriptor = false) {
+        def descIndex = fullInvokeDescriptor.indexOf('(')
+        def methodNameLimit = descIndex == -1 ? fullInvokeDescriptor.length() - 1 : descIndex
+        def methodNameIndex = fullInvokeDescriptor.lastIndexOf('.', methodNameLimit) + 1
+        if (methodNameIndex < 2) {
+            throw new IllegalArgumentException("Bad replacement method specification: $fullInvokeDescriptor")
+        }
+        def ownerClass = fullInvokeDescriptor[0..methodNameIndex - 2].replace('.', '/')
+        def methodNameEnd = descIndex >= 0 ? descIndex - 1 : descIndex
+        def methodName = fullInvokeDescriptor[methodNameIndex..methodNameEnd]
+        if (descIndex != -1 && fullInvokeDescriptor.indexOf(')', descIndex) == -1) {
+            throw new IllegalArgumentException("Replacement with broken arguments descriptor: $fullInvokeDescriptor")
+        }
+        def descriptor = descIndex == -1 ? null : fullInvokeDescriptor[descIndex..-1]
+        if (mandatoryDescriptor && !descriptor) {
+            throw new IllegalArgumentException("Missing mandatory argument descriptor: $fullInvokeDescriptor")
+        }
+        def result = new InvokeDescriptor(owner: ownerClass, methodName: methodName, descriptor: descriptor)
+        return result
+    }
+
+    static InvokeDescriptor parseDescriptorRegex(String fullInvokeDescriptor) {
+        def parts = fullInvokeDescriptor.split(' ')
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("Bad invoke regex descriptor: $fullInvokeDescriptor")
+        }
+        def ownerClass = parts[0].replaceAll('(?<!\\\\)\\\\\\.', '/')
+        def methodName = parts[1]
+        def descriptor = parts[2]
+        def result = new InvokeDescriptor(owner: ownerClass, methodName: methodName, descriptor: descriptor)
+        return result
+    }
+
     @Override
     BaseClassProcessor createClassProcessor() {
-        new StaticWrapper(ignoreClasses, replacements)
+        new StaticWrapper(ignoreClasses, replacements, replacementsRegex)
     }
 }

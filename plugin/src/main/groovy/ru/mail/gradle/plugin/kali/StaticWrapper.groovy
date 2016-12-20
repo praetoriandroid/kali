@@ -7,11 +7,14 @@ class StaticWrapper extends BaseClassProcessor {
 
     boolean ignore
     Set<String> ignoreClasses
-    Map<CallDescription, Replacement> replacements
+    List<Replacement> replacements
+    List<Replacement> replacementsRegex
 
-    public StaticWrapper(Set<String> ignoreClasses, Map<CallDescription, Replacement> replacements) {
+    public StaticWrapper(Set<String> ignoreClasses, List<Replacement> replacements,
+                         List<Replacement> replacementsRegex) {
         this.ignoreClasses = ignoreClasses
         this.replacements = replacements
+        this.replacementsRegex = replacementsRegex
     }
 
     @Override
@@ -33,18 +36,33 @@ class StaticWrapper extends BaseClassProcessor {
                                  String insnName,
                                  String insnDesc,
                                  boolean itf) {
-                replacements.each { replaceable, replacement ->
-                    if (insnName == replaceable.methodName &&
-                            insnOwner == replaceable.owner &&
-                            insnDesc == replaceable.desc) {
+                boolean replaced = false
+                replacements.each { replacement ->
+                    if (replacement.from.equals(insnOwner, insnName, insnDesc)) {
                         opcode = Opcodes.INVOKESTATIC
-                        insnOwner = replacement.owner
-                        insnName = replacement.methodName
-                        insnDesc = replacement.descriptor
+                        insnOwner = replacement.to.owner
+                        insnName = replacement.to.methodName
+                        insnDesc = replacement.to.descriptor
                         if (!insnDesc) {
-                            insnDesc = "(L$replaceable.owner;${replaceable.desc[1..-1]}"
+                            insnDesc = "(L$replacement.from.owner;${replacement.from.descriptor[1..-1]}"
                         }
+                        replaced = true
                         return false
+                    }
+                }
+                if (!replaced) {
+                    replacementsRegex.each { replacement ->
+                        if (replacement.from.matches(insnOwner, insnName, insnDesc)) {
+                            opcode = Opcodes.INVOKESTATIC
+                            if (replacement.to.descriptor) {
+                                insnDesc = replacement.to.descriptor
+                            } else {
+                                insnDesc = "(L$insnOwner;${insnDesc[1..-1]}"
+                            }
+                            insnOwner = replacement.to.owner
+                            insnName = replacement.to.methodName
+                            return false
+                        }
                     }
                 }
                 super.visitMethodInsn(opcode, insnOwner, insnName, insnDesc, itf)
