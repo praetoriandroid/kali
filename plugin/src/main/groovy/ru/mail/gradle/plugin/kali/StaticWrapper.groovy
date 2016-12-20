@@ -40,7 +40,10 @@ class StaticWrapper extends BaseClassProcessor {
                         opcode = Opcodes.INVOKESTATIC
                         insnOwner = replacement.owner
                         insnName = replacement.methodName
-                        insnDesc = "(L$replaceable.owner;${replaceable.desc[1..-1]}"
+                        insnDesc = replacement.descriptor
+                        if (!insnDesc) {
+                            insnDesc = "(L$replaceable.owner;${replaceable.desc[1..-1]}"
+                        }
                         return false
                     }
                 }

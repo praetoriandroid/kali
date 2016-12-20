@@ -56,11 +56,15 @@ if (file(PREBUILT_PLUGIN_DIR).exists()) {
 
     kali {
         replaceCalls {
-            ignoreClasses = ['com.example.kali.FakeLock']
+            ignoreClasses = [
+                    'com.example.kali.FakeLock',
+                    'com.example.kali.ActivityLogger'
+            ]
             replacements = [
-                    'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.kali.FakeLock.verboseAcquire',
-                    'android.os.PowerManager$WakeLock.acquire()V' : 'com.example.kali.FakeLock.verboseAcquire',
-                    'android.os.PowerManager$WakeLock.release()V' : 'com.example.kali.FakeLock.verboseRelease'
+                    'android.os.PowerManager$WakeLock.acquire(J)V'    : 'com.example.kali.FakeLock.verboseAcquire',
+                    'android.os.PowerManager$WakeLock.acquire()V'     : 'com.example.kali.FakeLock.verboseAcquire',
+                    'android.os.PowerManager$WakeLock.release()V'     : 'com.example.kali.FakeLock.verboseRelease',
+                    'com.example.kali.MainActivity.setContentView(I)V': 'com.example.kali.ActivityLogger.setContentView(Landroid/app/Activity;I)V'
             ]
         }
         makeAllFieldsPublic true

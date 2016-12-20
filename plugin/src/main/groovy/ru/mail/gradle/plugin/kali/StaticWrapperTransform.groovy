@@ -41,8 +41,14 @@ public class StaticWrapperTransform extends BaseTransform {
                 throw new IllegalArgumentException("Bad replacement method specification: $value")
             }
             def replacementClass = value[0..methodNameIndex - 1].replace('.', '/')
-            def replacementMethod = value[methodNameIndex + 1..-1]
-            def replacement = new Replacement(owner: replacementClass, methodName: replacementMethod)
+            descIndex = value.indexOf('(')
+            def methodNameEnd = descIndex >= 0 ? descIndex - 1 : descIndex
+            def replacementMethod = value[methodNameIndex + 1..methodNameEnd]
+            if (descIndex != -1 && value.indexOf(')', descIndex) == -1) {
+                throw new IllegalArgumentException("Replacement with broken arguments description: $value")
+            }
+            def replacementDesc = descIndex == -1 ? null : value[descIndex..-1]
+            def replacement = new Replacement(owner: replacementClass, methodName: replacementMethod, descriptor: replacementDesc)
 
             this.replacements[replaceable] = replacement
 
