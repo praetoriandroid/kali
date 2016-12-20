@@ -1,6 +1,6 @@
 package ru.mail.gradle.plugin.kali
 
 class StaticWrapperExtension {
-    String ignoreClass
+    Set<String> ignoreClasses
     Map<String, String> replacements
 }

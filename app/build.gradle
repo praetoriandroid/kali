@@ -56,7 +56,7 @@ if (file(PREBUILT_PLUGIN_DIR).exists()) {
 
     kali {
         replaceCalls {
-            ignoreClass 'com.example.kali.FakeLock'
+            ignoreClasses = ['com.example.kali.FakeLock']
             replacements = [
                     'android.os.PowerManager$WakeLock.acquire(J)V': 'com.example.kali.FakeLock.verboseAcquire',
                     'android.os.PowerManager$WakeLock.acquire()V' : 'com.example.kali.FakeLock.verboseAcquire',

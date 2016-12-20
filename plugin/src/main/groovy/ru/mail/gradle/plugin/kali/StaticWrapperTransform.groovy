@@ -2,7 +2,7 @@ package ru.mail.gradle.plugin.kali
 
 public class StaticWrapperTransform extends BaseTransform {
 
-    String ignoreClass
+    Set<String> ignoreClasses
     Map<CallDescription, Replacement> replacements
 
     StaticWrapperTransform() {
@@ -11,13 +11,15 @@ public class StaticWrapperTransform extends BaseTransform {
 
     @Override
     void configure(Map params) {
-        def ignoreClass = params['ignoreClass']
+        def ignoreClasses = params['ignoreClasses']
         def replacements = params['replacements']
-        if (ignoreClass == null || replacements == null) {
+        if (ignoreClasses == null || replacements == null) {
             return
         }
 
-        this.ignoreClass = ignoreClass
+        this.ignoreClasses = ignoreClasses.collect {
+            it.replace('.', '/')
+        }
         this.replacements = [:]
         replacements.each { key, value ->
             int descIndex = key.indexOf('(')
@@ -50,6 +52,6 @@ public class StaticWrapperTransform extends BaseTransform {
 
     @Override
     BaseClassProcessor createClassProcessor() {
-        new StaticWrapper(ignoreClass, replacements)
+        new StaticWrapper(ignoreClasses, replacements)
     }
 }

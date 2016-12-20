@@ -6,18 +6,18 @@ import org.objectweb.asm.Opcodes
 class StaticWrapper extends BaseClassProcessor {
 
     boolean ignore
-    String ignoreClass
+    Set<String> ignoreClasses
     Map<CallDescription, Replacement> replacements
 
-    public StaticWrapper(String ignoreClass, Map<CallDescription, Replacement> replacements) {
-        this.ignoreClass = ignoreClass.replace('.', '/')
+    public StaticWrapper(Set<String> ignoreClasses, Map<CallDescription, Replacement> replacements) {
+        this.ignoreClasses = ignoreClasses
         this.replacements = replacements
     }
 
     @Override
     void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces)
-        ignore = name == ignoreClass
+        ignore = ignoreClasses.contains(name)
     }
 
     @Override
