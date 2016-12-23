@@ -1,10 +1,12 @@
 package ru.mail.gradle.plugin.kali
 
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
-class StaticWrapper extends BaseClassProcessor {
+class StaticWrapper extends ClassVisitor {
 
     boolean ignore
     Set<String> ignoreClasses
@@ -17,10 +19,15 @@ class StaticWrapper extends BaseClassProcessor {
                          List<Replacement> replacements,
                          List<Replacement> replacementsRegex,
                          PreparedInfo info) {
+        super(Opcodes.ASM5, new ClassWriter(ClassWriter.COMPUTE_MAXS))
         this.ignoreClasses = ignoreClasses
         this.replacements = replacements
         this.replacementsRegex = replacementsRegex
         this.preparedInfo = info
+    }
+
+    byte[] toByteArray() {
+        cv.toByteArray()
     }
 
     @Override

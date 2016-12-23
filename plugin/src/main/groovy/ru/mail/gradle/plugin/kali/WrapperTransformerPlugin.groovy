@@ -15,12 +15,8 @@ class WrapperTransformerPlugin implements Plugin<Project> {
         project.extensions.create('kali', WrapperTransformerPluginExtension)
         project.kali.extensions.create('replaceCalls', StaticWrapperExtension)
 
-        BaseTransform staticWrapperTransform = new StaticWrapperTransform()
+        def staticWrapperTransform = new StaticWrapperTransform()
         project.android.registerTransform(staticWrapperTransform)
-
-        BaseTransform fieldExposerTransform = new FieldExposerTransform()
-        // FIXME Both transforms fail to apply
-//        project.android.registerTransform(fieldExposerTransform)
 
         project.afterEvaluate {
             def ignoreClasses = project.kali.replaceCalls.ignoreClasses
@@ -29,12 +25,10 @@ class WrapperTransformerPlugin implements Plugin<Project> {
             staticWrapperTransform.configure(ignoreClasses: ignoreClasses,
                     replacements: replacements, replacementsRegex: replacementsRegex)
 
-            def makeAllFieldsPublic = project.kali.makeAllFieldsPublic
-            fieldExposerTransform.configure(makeAllFieldsPublic: makeAllFieldsPublic)
-
             project.tasks.findAll {
                 it.name.startsWith('transformClassesWithStaticWrapperFor')
             }.each {
+                //TODO it is debug only
                 it.outputs.upToDateWhen {false}
             }
         }
