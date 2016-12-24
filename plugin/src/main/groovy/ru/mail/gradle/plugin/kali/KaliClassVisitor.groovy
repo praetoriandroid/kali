@@ -6,7 +6,7 @@ import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
-class StaticWrapper extends ClassVisitor {
+class KaliClassVisitor extends ClassVisitor {
 
     boolean ignore
     Set<String> ignoreClasses
@@ -15,10 +15,10 @@ class StaticWrapper extends ClassVisitor {
     String name
     final PreparedInfo preparedInfo
 
-    public StaticWrapper(Set<String> ignoreClasses,
-                         List<Replacement> replacements,
-                         List<Replacement> replacementsRegex,
-                         PreparedInfo info) {
+    public KaliClassVisitor(Set<String> ignoreClasses,
+                            List<Replacement> replacements,
+                            List<Replacement> replacementsRegex,
+                            PreparedInfo info) {
         super(Opcodes.ASM5, new ClassWriter(ClassWriter.COMPUTE_MAXS))
         this.ignoreClasses = ignoreClasses
         this.replacements = replacements

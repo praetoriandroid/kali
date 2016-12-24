@@ -3,7 +3,7 @@ package ru.mail.gradle.plugin.kali
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-class WrapperTransformerPlugin implements Plugin<Project> {
+class KaliPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
@@ -12,10 +12,10 @@ class WrapperTransformerPlugin implements Plugin<Project> {
             throw new IllegalStateException('Either com.android.application or com.android.library plugin is required')
         }
 
-        project.extensions.create('kali', WrapperTransformerPluginExtension)
-        project.kali.extensions.create('replaceCalls', StaticWrapperExtension)
+        project.extensions.create('kali', KaliPluginExtension)
+        project.kali.extensions.create('replaceCalls', ReplaceCallsExtension)
 
-        def staticWrapperTransform = new StaticWrapperTransform()
+        def staticWrapperTransform = new KaliTransform()
         project.android.registerTransform(staticWrapperTransform)
 
         project.afterEvaluate {
@@ -25,10 +25,10 @@ class WrapperTransformerPlugin implements Plugin<Project> {
             staticWrapperTransform.configure(ignoreClasses: ignoreClasses,
                     replacements: replacements, replacementsRegex: replacementsRegex)
 
+            //TODO it is debug only
             project.tasks.findAll {
-                it.name.startsWith('transformClassesWithStaticWrapperFor')
+                it.name.startsWith('transformClassesWithKaliFor')
             }.each {
-                //TODO it is debug only
                 it.outputs.upToDateWhen {false}
             }
         }

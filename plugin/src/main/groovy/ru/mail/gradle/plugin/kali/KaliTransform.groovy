@@ -11,7 +11,7 @@ import java.util.zip.ZipFile
 
 import static com.android.build.api.transform.QualifiedContent.DefaultContentType.CLASSES
 
-class StaticWrapperTransform extends Transform {
+class KaliTransform extends Transform {
 
     Set<String> ignoreClasses
     List<Replacement> replacements
@@ -119,7 +119,7 @@ class StaticWrapperTransform extends Transform {
 
     void processClass(InputStream classStream, File outputFile, PreparedInfo preparedInfo) {
         ClassReader classReader = new ClassReader(classStream)
-        ClassVisitor processor = new StaticWrapper(ignoreClasses, replacements, replacementsRegex, preparedInfo)
+        ClassVisitor processor = new KaliClassVisitor(ignoreClasses, replacements, replacementsRegex, preparedInfo)
         classReader.accept(processor, 0)
         outputFile.bytes = processor.toByteArray()
     }
