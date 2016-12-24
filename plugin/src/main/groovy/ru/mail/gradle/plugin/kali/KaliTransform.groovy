@@ -17,10 +17,10 @@ class KaliTransform extends Transform {
     List<Replacement> replacements
     List<Replacement> replacementsRegex
 
-    void configure(Map params) {
-        def ignoreClasses = params['ignoreClasses']
-        def replacements = params['replacements']
-        def replacementsRegex = params['replacementsRegex']
+    void configure(ReplaceCallsExtension extension) {
+        def ignoreClasses = extension.ignoreClasses
+        def replacements = extension.replacements
+        def replacementsRegex = extension.replacementsRegex
         if (!ignoreClasses || (!replacements && !replacementsRegex)) {
             return
         }
@@ -31,15 +31,15 @@ class KaliTransform extends Transform {
 
         this.replacements = []
         replacements.each { key, value ->
-            def replaceable = parseDescriptor(key)
-            def replacement = parseDescriptor(value)
+            def replaceable = InvokeDescriptor.fromFullDescriptor(key)
+            def replacement = InvokeDescriptor.fromFullDescriptor(value)
             this.replacements << new Replacement(from: replaceable, to: replacement)
         }
 
         this.replacementsRegex = []
         replacementsRegex.each { key, value ->
-            def replaceable = parseDescriptorRegex(key)
-            def replacement = parseDescriptor(value, false)
+            def replaceable = InvokeDescriptor.fromRegex(key)
+            def replacement = InvokeDescriptor.fromFullDescriptor(value, false)
             this.replacementsRegex << new Replacement(from: replaceable, to: replacement)
         }
     }
@@ -134,39 +134,6 @@ class KaliTransform extends Transform {
         classReader.accept(transformer, 0)
 
         builder.addClass(transformer.build())
-    }
-
-    static InvokeDescriptor parseDescriptor(String fullInvokeDescriptor, boolean mandatoryDescriptor = false) {
-        def descIndex = fullInvokeDescriptor.indexOf('(')
-        def methodNameLimit = descIndex == -1 ? fullInvokeDescriptor.length() - 1 : descIndex
-        def methodNameIndex = fullInvokeDescriptor.lastIndexOf('.', methodNameLimit) + 1
-        if (methodNameIndex < 2) {
-            throw new IllegalArgumentException("Bad replacement method specification: $fullInvokeDescriptor")
-        }
-        def ownerClass = fullInvokeDescriptor[0..methodNameIndex - 2].replace('.', '/')
-        def methodNameEnd = descIndex >= 0 ? descIndex - 1 : descIndex
-        def methodName = fullInvokeDescriptor[methodNameIndex..methodNameEnd]
-        if (descIndex != -1 && fullInvokeDescriptor.indexOf(')', descIndex) == -1) {
-            throw new IllegalArgumentException("Replacement with broken arguments descriptor: $fullInvokeDescriptor")
-        }
-        def descriptor = descIndex == -1 ? null : fullInvokeDescriptor[descIndex..-1]
-        if (mandatoryDescriptor && !descriptor) {
-            throw new IllegalArgumentException("Missing mandatory argument descriptor: $fullInvokeDescriptor")
-        }
-        def result = new InvokeDescriptor(owner: ownerClass, methodName: methodName, descriptor: descriptor)
-        return result
-    }
-
-    static InvokeDescriptor parseDescriptorRegex(String fullInvokeDescriptor) {
-        def parts = fullInvokeDescriptor.split(' ')
-        if (parts.length != 3) {
-            throw new IllegalArgumentException("Bad invoke regex descriptor: $fullInvokeDescriptor")
-        }
-        def ownerClass = parts[0].replaceAll('(?<!\\\\)\\\\\\.', '/')
-        def methodName = parts[1]
-        def descriptor = parts[2]
-        def result = new InvokeDescriptor(owner: ownerClass, methodName: methodName, descriptor: descriptor)
-        return result
     }
 
     @Override

@@ -19,11 +19,7 @@ class KaliPlugin implements Plugin<Project> {
         project.android.registerTransform(transform)
 
         project.afterEvaluate {
-            def ignoreClasses = project.kali.replaceCalls.ignoreClasses
-            def replacements = project.kali.replaceCalls.replacements
-            def replacementsRegex = project.kali.replaceCalls.replacementsRegex
-            transform.configure(ignoreClasses: ignoreClasses,
-                    replacements: replacements, replacementsRegex: replacementsRegex)
+            transform.configure(project.kali.replaceCalls)
 
             //TODO it is debug only
             project.tasks.findAll {
