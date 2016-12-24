@@ -15,14 +15,14 @@ class KaliPlugin implements Plugin<Project> {
         project.extensions.create('kali', KaliPluginExtension)
         project.kali.extensions.create('replaceCalls', ReplaceCallsExtension)
 
-        def staticWrapperTransform = new KaliTransform()
-        project.android.registerTransform(staticWrapperTransform)
+        def transform = new KaliTransform()
+        project.android.registerTransform(transform)
 
         project.afterEvaluate {
             def ignoreClasses = project.kali.replaceCalls.ignoreClasses
             def replacements = project.kali.replaceCalls.replacements
             def replacementsRegex = project.kali.replaceCalls.replacementsRegex
-            staticWrapperTransform.configure(ignoreClasses: ignoreClasses,
+            transform.configure(ignoreClasses: ignoreClasses,
                     replacements: replacements, replacementsRegex: replacementsRegex)
 
             //TODO it is debug only

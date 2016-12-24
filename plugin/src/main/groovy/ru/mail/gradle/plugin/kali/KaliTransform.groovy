@@ -7,7 +7,7 @@ import com.android.build.api.transform.TransformInvocation
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 
-import java.util.zip.ZipFile
+import java.util.zip.ZipEntry
 
 import static com.android.build.api.transform.QualifiedContent.DefaultContentType.CLASSES
 
@@ -45,76 +45,79 @@ class KaliTransform extends Transform {
     }
 
     @Override
-    void transform(final TransformInvocation invocation) {
-        def outDir = invocation.outputProvider.getContentLocation(name, outputTypes, scopes, Format.DIRECTORY)
+    void transform(TransformInvocation invocation) {
+        def preparedInfo = prepare(invocation)
+        def outDir = getOutputDir(invocation)
 
+        invokeTransformation(invocation, preparedInfo, outDir)
+    }
+
+
+    static PreparedInfo prepare(TransformInvocation invocation) {
+        def preparedInfoBuilder = new PreparedInfo.Builder()
+
+        new Traverser() {
+            @Override
+            void processZipClass(ZipEntry entry, InputStream stream) {
+                preProcessClass(stream, preparedInfoBuilder)
+            }
+
+            @Override
+            void processFile(File baseDir, File file, InputStream stream) {
+                preProcessClass(stream, preparedInfoBuilder)
+            }
+        }.traverse(invocation)
+
+        preparedInfoBuilder.build()
+    }
+
+    private File getOutputDir(TransformInvocation invocation) {
+        def provider = invocation.outputProvider
+        def outDir = provider.getContentLocation(name, outputTypes, scopes, Format.DIRECTORY)
         outDir.deleteDir()
         outDir.mkdirs()
 
-        def preparedInfoBuilder = new PreparedInfo.Builder()
+        outDir
+    }
 
-        invocation.inputs.each { transformInput ->
-            transformInput.jarInputs.each { jarInput ->
-                ZipFile zip = new ZipFile(jarInput.file)
-                zip.entries().findAll { zipEntry ->
-                    !zipEntry.directory
-                }.each { zipEntry ->
-                    if (zipEntry.name.toLowerCase().endsWith('.class')) {
-                        InputStream entryStream = zip.getInputStream(zipEntry);
-                        preProcessClass(entryStream, preparedInfoBuilder)
-                        entryStream.close()
-                    }
-                }
+    private void invokeTransformation(TransformInvocation invocation, PreparedInfo preparedInfo, File outDir) {
+        new Traverser() {
+            @Override
+            void processZipClass(ZipEntry entry, InputStream stream) {
+                processClass(stream, outputForZip(entry), preparedInfo)
             }
 
-            transformInput.directoryInputs.each { directoryInput ->
-                directoryInput.file.traverse { file ->
-                    if (file.isDirectory()) {
-                    } else {
-                        InputStream fileStream = new FileInputStream(file)//file.newInputStream();
-                        preProcessClass(fileStream, preparedInfoBuilder)
-                        fileStream.close()
-                    }
-                }
-            }
-        }
-
-        def preparedInfo = preparedInfoBuilder.build()
-
-        invocation.inputs.each { transformInput ->
-            transformInput.jarInputs.each { jarInput ->
-                ZipFile zip = new ZipFile(jarInput.file)
-                zip.entries().findAll { zipEntry ->
-                    !zipEntry.directory
-                }.each { zipEntry ->
-                    def outputFile = new File(outDir, zipEntry.name)
-                    outputFile.parentFile.mkdirs()
-                    if (zipEntry.name.toLowerCase().endsWith('.class')) {
-                        InputStream entryStream = zip.getInputStream(zipEntry);
-                        processClass(entryStream, outputFile, preparedInfo)
-                        entryStream.close()
-                    } else {
-                        outputFile.bytes = zip.getInputStream(zipEntry).bytes
-                    }
-                }
+            @Override
+            void processZipBytes(ZipEntry entry, InputStream stream) {
+                outputForZip(entry) << stream
             }
 
-            transformInput.directoryInputs.each { directoryInput ->
-                int baseDirLength = directoryInput.file.absolutePath.length()
-                directoryInput.file.traverse { file ->
-                    def path = "${file.absolutePath[baseDirLength..-1]}"
-                    def outputFile = new File(outDir, path)
-
-                    if (file.isDirectory()) {
-                        outputFile.mkdirs()
-                    } else {
-                        InputStream fileStream = new FileInputStream(file)//file.newInputStream();
-                        processClass(fileStream, outputFile, preparedInfo)
-                        fileStream.close()
-                    }
-                }
+            @Override
+            void processDir(File baseDir, File file) {
+                outputForFile(baseDir, file).mkdirs()
             }
-        }
+
+            @Override
+            void processFile(File baseDir, File file, InputStream stream) {
+                def outputFile = outputForFile(baseDir, file)
+                processClass(stream, outputFile, preparedInfo)
+            }
+
+            File outputForZip(ZipEntry entry) {
+                def outputFile = new File(outDir, entry.name)
+                outputFile.parentFile.mkdirs()
+
+                outputFile
+            }
+
+            File outputForFile(File baseDir, File file) {
+                int baseDirLength = baseDir.absolutePath.length()
+                def path = "${file.absolutePath[baseDirLength..-1]}"
+
+                new File(outDir, path)
+            }
+
+        }.traverse(invocation)
     }
 
     void processClass(InputStream classStream, File outputFile, PreparedInfo preparedInfo) {
