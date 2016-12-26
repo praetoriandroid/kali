@@ -59,40 +59,39 @@ class KaliClassVisitor extends ClassVisitor {
                                  String insnName,
                                  String insnDesc,
                                  boolean itf) {
-                boolean replaced = false
-                replacements.each { replacement ->
-                    if (replacement.from.equals(insnOwner, insnName, insnDesc)) {
+                Replacement matchedReplacement = replacements.find { replacement ->
+                    return replacement.from.equals(insnOwner, insnName, insnDesc)
+                }
+                if (matchedReplacement) {
+                    opcode = Opcodes.INVOKESTATIC
+                    insnOwner = matchedReplacement.to.owner
+                    insnName = matchedReplacement.to.methodName
+                    insnDesc = matchedReplacement.to.descriptor
+                    if (!insnDesc) {
+                        insnDesc = "(L$matchedReplacement.from.owner;${matchedReplacement.from.descriptor[1..-1]}"
+                    }
+                } else {
+                    matchedReplacement = replacementsRegex.find { replacement ->
+                        return replacement.from.matches(insnOwner, insnName, insnDesc)
+                    }
+                    if (matchedReplacement) {
                         opcode = Opcodes.INVOKESTATIC
-                        insnOwner = replacement.to.owner
-                        insnName = replacement.to.methodName
-                        insnDesc = replacement.to.descriptor
-                        if (!insnDesc) {
-                            insnDesc = "(L$replacement.from.owner;${replacement.from.descriptor[1..-1]}"
+                        if (matchedReplacement.to.descriptor) {
+                            insnDesc = matchedReplacement.to.descriptor
+                        } else {
+                            insnDesc = "(L$insnOwner;${insnDesc[1..-1]}"
                         }
-                        replaced = true
-                        return
+                        insnOwner = matchedReplacement.to.owner
+                        insnName = matchedReplacement.to.methodName
                     }
                 }
-                if (!replaced) {
-                    replacementsRegex.each { replacement ->
-                        if (replacement.from.matches(insnOwner, insnName, insnDesc)) {
-                            opcode = Opcodes.INVOKESTATIC
-                            if (replacement.to.descriptor) {
-                                insnDesc = replacement.to.descriptor
-                            } else {
-                                insnDesc = "(L$insnOwner;${insnDesc[1..-1]}"
-                            }
-                            insnOwner = replacement.to.owner
-                            insnName = replacement.to.methodName
-                            return
-                        }
-                    }
-                }
+
                 def accessor = preparedInfo.getAccessor(insnOwner, insnName, insnDesc)
                 if (accessor) {
                     accessor.accept(this)
                     return
                 }
+
                 super.visitMethodInsn(opcode, insnOwner, insnName, insnDesc, itf)
             }
 
