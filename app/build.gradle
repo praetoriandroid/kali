@@ -68,6 +68,7 @@ if (file(PREBUILT_PLUGIN_DIR).exists()) {
                     '.*Activity setContentView \\(I\\)V'                  : 'com.example.kali.ActivityLogger.setContentView(Landroid/app/Activity;I)V'
             ]
         }
+        inlineSyntheticFieldAccessors true
     }
 
 } else {

@@ -17,10 +17,10 @@ class KaliTransform extends Transform {
     List<Replacement> replacements
     List<Replacement> replacementsRegex
 
-    void configure(ReplaceCallsExtension extension) {
-        def ignoreClasses = extension.ignoreClasses
-        def replacements = extension.replacements
-        def replacementsRegex = extension.replacementsRegex
+    void configure(ReplaceCallsExtension replaceCalls, boolean inlineSyntheticFieldAccessors) {
+        def ignoreClasses = replaceCalls.ignoreClasses
+        def replacements = replaceCalls.replacements
+        def replacementsRegex = replaceCalls.replacementsRegex
         if (!ignoreClasses || (!replacements && !replacementsRegex)) {
             return
         }

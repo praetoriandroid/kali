@@ -19,7 +19,7 @@ class KaliPlugin implements Plugin<Project> {
         project.android.registerTransform(transform)
 
         project.afterEvaluate {
-            transform.configure(project.kali.replaceCalls)
+            transform.configure(project.kali.replaceCalls, project.kali.inlineSyntheticFieldAccessors)
 
             //TODO it is debug only
             project.tasks.findAll {
