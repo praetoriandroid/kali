@@ -16,8 +16,10 @@ class KaliTransform extends Transform {
     Set<String> ignoreClasses
     List<Replacement> replacements
     List<Replacement> replacementsRegex
+    boolean inlineSyntheticFieldAccessors
 
     void configure(ReplaceCallsExtension replaceCalls, boolean inlineSyntheticFieldAccessors) {
+        this.inlineSyntheticFieldAccessors = inlineSyntheticFieldAccessors
         def ignoreClasses = replaceCalls.ignoreClasses
         def replacements = replaceCalls.replacements
         def replacementsRegex = replaceCalls.replacementsRegex
@@ -52,21 +54,22 @@ class KaliTransform extends Transform {
         invokeTransformation(invocation, preparedInfo, outDir)
     }
 
-
-    static PreparedInfo prepare(TransformInvocation invocation) {
+    PreparedInfo prepare(TransformInvocation invocation) {
         def preparedInfoBuilder = new PreparedInfo.Builder()
 
-        new Traverser() {
-            @Override
-            void processZipClass(ZipEntry entry, InputStream stream) {
-                preProcessClass(stream, preparedInfoBuilder)
-            }
+        if (inlineSyntheticFieldAccessors) {
+            new Traverser() {
+                @Override
+                void processZipClass(ZipEntry entry, InputStream stream) {
+                    preProcessClass(stream, preparedInfoBuilder)
+                }
 
-            @Override
-            void processFile(File baseDir, File file, InputStream stream) {
-                preProcessClass(stream, preparedInfoBuilder)
-            }
-        }.traverse(invocation)
+                @Override
+                void processFile(File baseDir, File file, InputStream stream) {
+                    preProcessClass(stream, preparedInfoBuilder)
+                }
+            }.traverse(invocation)
+        }
 
         preparedInfoBuilder.build()
     }
