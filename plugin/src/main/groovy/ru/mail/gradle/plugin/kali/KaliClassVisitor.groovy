@@ -5,21 +5,26 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class KaliClassVisitor extends ClassVisitor {
 
+    final Logger logger
     boolean ignore
     Set<String> ignoreClasses
     List<Replacement> replacements
     List<Replacement> replacementsRegex
-    String name
+    String className
     final PreparedInfo preparedInfo
+    boolean classNameWasShown
 
     public KaliClassVisitor(Set<String> ignoreClasses,
                             List<Replacement> replacements,
                             List<Replacement> replacementsRegex,
                             PreparedInfo info) {
         super(Opcodes.ASM5, new ClassWriter(ClassWriter.COMPUTE_MAXS))
+        this.logger = LoggerFactory.getLogger(KaliClassVisitor)
         this.ignoreClasses = ignoreClasses
         this.replacements = replacements
         this.replacementsRegex = replacementsRegex
@@ -34,13 +39,15 @@ class KaliClassVisitor extends ClassVisitor {
     void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces)
         ignore = ignoreClasses.contains(name)
-        this.name = name
+        className = name
     }
 
     @Override
     FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-        if (preparedInfo.hasAccessor(this.name, name, desc)) {
+        if (preparedInfo.hasAccessor(className, name, desc)) {
             access = (access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PUBLIC
+            showClassNameOnce()
+            logger.info "  Making public: $name"
         }
         return super.visitField(access, name, desc, signature, value)
     }
@@ -63,6 +70,8 @@ class KaliClassVisitor extends ClassVisitor {
                     return replacement.from.equals(insnOwner, insnName, insnDesc)
                 }
                 if (matchedReplacement) {
+                    showClassNameOnce()
+                    logger.info "  Replace invocation: ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
                     opcode = Opcodes.INVOKESTATIC
                     insnOwner = matchedReplacement.to.owner
                     insnName = matchedReplacement.to.methodName
@@ -75,6 +84,8 @@ class KaliClassVisitor extends ClassVisitor {
                         return replacement.from.matches(insnOwner, insnName, insnDesc)
                     }
                     if (matchedReplacement) {
+                        showClassNameOnce()
+                        logger.info "  Replace invocation: ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
                         opcode = Opcodes.INVOKESTATIC
                         if (matchedReplacement.to.descriptor) {
                             insnDesc = matchedReplacement.to.descriptor
@@ -88,6 +99,8 @@ class KaliClassVisitor extends ClassVisitor {
 
                 def accessor = preparedInfo.getAccessor(insnOwner, insnName, insnDesc)
                 if (accessor) {
+                    showClassNameOnce()
+                    logger.info "  Inline accessor invocation for: ${accessor.field.owner.replace('/', '.')}.$accessor.field.name"
                     accessor.accept(this)
                     return
                 }
@@ -95,6 +108,13 @@ class KaliClassVisitor extends ClassVisitor {
                 super.visitMethodInsn(opcode, insnOwner, insnName, insnDesc, itf)
             }
 
+        }
+    }
+
+    def showClassNameOnce() {
+        if (!classNameWasShown) {
+            logger.info "Processing class ${className.replace('/', '.')}:"
+            classNameWasShown = true
         }
     }
 

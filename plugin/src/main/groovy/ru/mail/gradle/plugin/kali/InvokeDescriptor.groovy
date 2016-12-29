@@ -6,7 +6,7 @@ class InvokeDescriptor {
     String descriptor
 
     public String toString() {
-        "$owner#$methodName${descriptor == null ? '(...)' : descriptor}"
+        "${owner.replace('/', '.')}.$methodName${descriptor == null ? '(...)' : descriptor}"
     }
 
     boolean equals(String owner, String methodName, String descriptor) {
