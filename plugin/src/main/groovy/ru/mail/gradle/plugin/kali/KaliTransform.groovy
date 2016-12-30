@@ -24,6 +24,9 @@ class KaliTransform extends Transform {
         def replacements = replaceCalls.replacements
         def replacementsRegex = replaceCalls.replacementsRegex
         if (!ignoreClasses || (!replacements && !replacementsRegex)) {
+            this.ignoreClasses = []
+            this.replacements = []
+            this.replacementsRegex = []
             return
         }
 
