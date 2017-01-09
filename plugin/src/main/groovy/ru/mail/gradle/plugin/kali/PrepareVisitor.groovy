@@ -1,6 +1,5 @@
 package ru.mail.gradle.plugin.kali
 
-import org.codehaus.groovy.runtime.StackTraceUtils
 import org.objectweb.asm.*
 import org.objectweb.asm.tree.FieldInsnNode
 import org.objectweb.asm.tree.InsnList
@@ -18,7 +17,9 @@ class PrepareVisitor extends ClassVisitor {
 
     @Override
     void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        builder = new ClassInfo.Builder().setName(name)
+        builder = new ClassInfo.Builder()
+                .setName(name)
+                .setSuperclass(superName)
         className = name
         super.visit(version, access, name, signature, superName, interfaces)
     }
@@ -35,6 +36,12 @@ class PrepareVisitor extends ClassVisitor {
                 }
             }
         }
+        return null
+    }
+
+    @Override
+    FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        builder.addField(name, desc)
         return null
     }
 

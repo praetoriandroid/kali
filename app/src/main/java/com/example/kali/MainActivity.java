@@ -2,13 +2,14 @@ package com.example.kali;
 
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 
+import com.example.kali.tmp.TmpActivity;
+
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends TmpActivity {
 
     private boolean untouched;
     private PowerManager.WakeLock wakeLock;
@@ -50,6 +51,11 @@ public class MainActivity extends AppCompatActivity {
         void innerMethod3() {
             MainActivity activity = null;
             activity.test += 1000;
+        }
+
+        void innerMethod4() {
+            MainActivity activity = null;
+            activity.protectedField = "";
         }
 
     }

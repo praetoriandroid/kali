@@ -3,9 +3,31 @@ package ru.mail.gradle.plugin.kali
 final class PreparedInfo {
 
     private final classes
+    private final accessedFields
 
     private PreparedInfo(Builder builder) {
         classes = builder.classes.clone()
+        accessedFields = [:]
+        classes.values().each { ClassInfo classInfo ->
+            classInfo.allAccessors.each {
+                def field = resolveField(it.field)
+                if (field) {
+                    accessedFields[field.toString()] = field
+                }
+            }
+        }
+    }
+
+    private FieldInfo resolveField(FieldInfo field) {
+        def clazz = getClass([field.owner])
+        while (!clazz.hasField(field.name, field.desc)) {
+            clazz = getClass(clazz.superclassName)
+            if (!clazz) {
+                return null
+            }
+            field = field.forAnotherClass(clazz.name)
+        }
+        return field
     }
 
     ClassInfo getClass(String className) {
@@ -17,7 +39,7 @@ final class PreparedInfo {
     }
 
     boolean hasAccessor(String className, String fieldName, String fieldDesc) {
-        getClass(className)?.hasAccessor(fieldName, fieldDesc)
+        accessedFields[FieldInfo.toString(className, fieldName, fieldDesc)]
     }
 
     static class Builder {
