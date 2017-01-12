@@ -7,15 +7,16 @@ class KaliPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        if (!project.pluginManager.findPlugin('com.android.application') &&
-                !project.pluginManager.findPlugin('com.android.library')) {
+        def applicationPluginApplied = project.pluginManager.findPlugin('com.android.application') as boolean
+        def libraryPluginApplied = project.pluginManager.findPlugin('com.android.library') as boolean
+        if (!applicationPluginApplied && !libraryPluginApplied) {
             throw new IllegalStateException('Either com.android.application or com.android.library plugin is required')
         }
 
         project.extensions.create('kali', KaliPluginExtension)
         project.kali.extensions.create('replaceCalls', ReplaceCallsExtension)
 
-        def transform = new KaliTransform()
+        def transform = new KaliTransform(applicationPluginApplied)
         project.android.registerTransform(transform)
 
         project.afterEvaluate {
