@@ -8,7 +8,7 @@ class KaliPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         if (!project.pluginManager.findPlugin('com.android.application') &&
-                !project.pluginManager.findPlugin('com.android.application')) {
+                !project.pluginManager.findPlugin('com.android.library')) {
             throw new IllegalStateException('Either com.android.application or com.android.library plugin is required')
         }
 
