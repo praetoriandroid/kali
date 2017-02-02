@@ -39,10 +39,10 @@ class KaliTransform extends Transform {
 
     void configure(ReplaceCallsExtension replaceCalls, boolean inlineSyntheticFieldAccessors) {
         this.inlineSyntheticFieldAccessors = inlineSyntheticFieldAccessors
-        def ignoreClasses = replaceCalls.ignoreClasses
+        def ignoreClasses = replaceCalls.ignoreClasses ?: []
         def replacements = replaceCalls.replacements
         def replacementsRegex = replaceCalls.replacementsRegex
-        if (!ignoreClasses || (!replacements && !replacementsRegex)) {
+        if (!replacements && !replacementsRegex) {
             this.ignoreClasses = []
             this.replacements = []
             this.replacementsRegex = []
