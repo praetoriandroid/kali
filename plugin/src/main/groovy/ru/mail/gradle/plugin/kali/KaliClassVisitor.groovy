@@ -67,13 +67,14 @@ class KaliClassVisitor extends ClassVisitor {
                                  String insnDesc,
                                  boolean itf) {
                 Replacement matchedReplacement = replacements.find { replacement ->
+                    //noinspection ChangeToOperator
                     return replacement.from.equals(insnOwner, insnName, insnDesc)
                 }
                 if (matchedReplacement) {
                     showClassNameOnce()
                     logger.info "  Replace invocation: ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
                     opcode = Opcodes.INVOKESTATIC
-                    (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc)
+                    (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc, opcode)
                 } else {
                     matchedReplacement = replacementsRegex.find { replacement ->
                         return replacement.from.matches(insnOwner, insnName, insnDesc)
@@ -82,7 +83,7 @@ class KaliClassVisitor extends ClassVisitor {
                         showClassNameOnce()
                         logger.info "  Replace invocation (by regex): ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
                         opcode = Opcodes.INVOKESTATIC
-                        (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc)
+                        (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc, opcode)
                     }
                 }
 

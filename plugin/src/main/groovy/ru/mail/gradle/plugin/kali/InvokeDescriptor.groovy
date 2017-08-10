@@ -1,5 +1,7 @@
 package ru.mail.gradle.plugin.kali
 
+import com.android.dx.io.Opcodes
+
 class InvokeDescriptor {
     String owner
     String methodName
@@ -17,12 +19,16 @@ class InvokeDescriptor {
         return owner =~ this.owner && methodName =~ this.methodName && descriptor =~ this.descriptor
     }
 
-    def toStaticInvocation(originalOwner, originalDesc) {
+    def toStaticInvocation(originalOwner, originalDesc, opcode) {
         def newDesc
         if (descriptor) {
             newDesc = descriptor
         } else {
-            newDesc = "(L$originalOwner;${originalDesc[1..-1]}"
+            if (opcode == Opcodes.INVOKE_STATIC) {
+                newDesc = originalDesc
+            } else {
+                newDesc = "(L$originalOwner;${originalDesc[1..-1]}"
+            }
         }
         return [owner, methodName, newDesc]
     }
