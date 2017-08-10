@@ -73,27 +73,16 @@ class KaliClassVisitor extends ClassVisitor {
                     showClassNameOnce()
                     logger.info "  Replace invocation: ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
                     opcode = Opcodes.INVOKESTATIC
-                    insnOwner = matchedReplacement.to.owner
-                    insnName = matchedReplacement.to.methodName
-                    insnDesc = matchedReplacement.to.descriptor
-                    if (!insnDesc) {
-                        insnDesc = "(L$matchedReplacement.from.owner;${matchedReplacement.from.descriptor[1..-1]}"
-                    }
+                    (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc)
                 } else {
                     matchedReplacement = replacementsRegex.find { replacement ->
                         return replacement.from.matches(insnOwner, insnName, insnDesc)
                     }
                     if (matchedReplacement) {
                         showClassNameOnce()
-                        logger.info "  Replace invocation: ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
+                        logger.info "  Replace invocation (by regex): ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
                         opcode = Opcodes.INVOKESTATIC
-                        if (matchedReplacement.to.descriptor) {
-                            insnDesc = matchedReplacement.to.descriptor
-                        } else {
-                            insnDesc = "(L$insnOwner;${insnDesc[1..-1]}"
-                        }
-                        insnOwner = matchedReplacement.to.owner
-                        insnName = matchedReplacement.to.methodName
+                        (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc)
                     }
                 }
 

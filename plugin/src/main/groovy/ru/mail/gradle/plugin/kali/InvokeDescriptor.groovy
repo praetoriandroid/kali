@@ -17,6 +17,16 @@ class InvokeDescriptor {
         return owner =~ this.owner && methodName =~ this.methodName && descriptor =~ this.descriptor
     }
 
+    def toStaticInvocation(originalOwner, originalDesc) {
+        def newDesc
+        if (descriptor) {
+            newDesc = descriptor
+        } else {
+            newDesc = "(L$originalOwner;${originalDesc[1..-1]}"
+        }
+        return [owner, methodName, newDesc]
+    }
+
     static InvokeDescriptor fromFullDescriptor(String fullInvokeDescriptor,
                                                boolean mandatoryDescriptor = false) {
         def descIndex = fullInvokeDescriptor.indexOf('(')
