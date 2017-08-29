@@ -53,8 +53,8 @@ class KaliClassVisitor extends ClassVisitor {
     }
 
     @Override
-    MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        def defaultMethodVisitor = super.visitMethod(access, name, desc, signature, exceptions)
+    MethodVisitor visitMethod(int access, String methodName, String methodDesc, String signature, String[] exceptions) {
+        def defaultMethodVisitor = super.visitMethod(access, methodName, methodDesc, signature, exceptions)
         if (ignore) {
             return defaultMethodVisitor
         }
@@ -62,32 +62,32 @@ class KaliClassVisitor extends ClassVisitor {
 
             @Override
             void visitMethodInsn(int opcode,
-                                 String insnOwner,
-                                 String insnName,
-                                 String insnDesc,
+                                 String owner,
+                                 String name,
+                                 String desc,
                                  boolean itf) {
                 Replacement matchedReplacement = replacements.find { replacement ->
                     //noinspection ChangeToOperator
-                    return replacement.from.equals(insnOwner, insnName, insnDesc)
+                    return replacement.from.equals(owner, name, desc)
                 }
                 if (matchedReplacement) {
                     showClassNameOnce()
-                    logger.info "  Replace invocation: ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
+                    logger.info "  Replace invocation: ${owner.replace('/', '.')}.$name$desc -> $matchedReplacement.to"
                     opcode = Opcodes.INVOKESTATIC
-                    (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc, opcode)
+                    (owner, name, desc) = matchedReplacement.to.toStaticInvocation(owner, desc, opcode)
                 } else {
                     matchedReplacement = replacementsRegex.find { replacement ->
-                        return replacement.from.matches(insnOwner, insnName, insnDesc)
+                        return replacement.from.matches(owner, name, desc)
                     }
                     if (matchedReplacement) {
                         showClassNameOnce()
-                        logger.info "  Replace invocation (by regex): ${insnOwner.replace('/', '.')}.$insnName$insnDesc -> $matchedReplacement.to"
+                        logger.info "  Replace invocation (by regex): ${owner.replace('/', '.')}.$name$desc -> $matchedReplacement.to"
                         opcode = Opcodes.INVOKESTATIC
-                        (insnOwner, insnName, insnDesc) = matchedReplacement.to.toStaticInvocation(insnOwner, insnDesc, opcode)
+                        (owner, name, desc) = matchedReplacement.to.toStaticInvocation(owner, desc, opcode)
                     }
                 }
 
-                def accessor = preparedInfo.getAccessor(insnOwner, insnName, insnDesc)
+                def accessor = preparedInfo.getAccessor(owner, name, desc)
                 if (accessor) {
                     showClassNameOnce()
                     logger.info "  Inline accessor invocation for: ${accessor.field.owner.replace('/', '.')}.$accessor.field.name"
@@ -95,7 +95,7 @@ class KaliClassVisitor extends ClassVisitor {
                     return
                 }
 
-                super.visitMethodInsn(opcode, insnOwner, insnName, insnDesc, itf)
+                super.visitMethodInsn(opcode, owner, name, desc, itf)
             }
 
         }
