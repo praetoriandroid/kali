@@ -32,13 +32,15 @@ class KaliTransform extends Transform {
     List<Replacement> replacements
     List<Replacement> replacementsRegex
     boolean inlineSyntheticFieldAccessors
+    Map<String, String> setFieldModifiers
 
     KaliTransform(boolean applicationProject) {
         this.applicationProject = applicationProject
     }
 
-    void configure(ReplaceCallsExtension replaceCalls, boolean inlineSyntheticFieldAccessors) {
-        this.inlineSyntheticFieldAccessors = inlineSyntheticFieldAccessors
+    void configure(ReplaceCallsExtension replaceCalls, KaliPluginExtension kali) {
+        inlineSyntheticFieldAccessors = kali.inlineSyntheticFieldAccessors
+        setFieldModifiers = kali.setFieldModifiers
         def ignoreClasses = replaceCalls.ignoreClasses ?: []
         def replacements = replaceCalls.replacements
         def replacementsRegex = replaceCalls.replacementsRegex
@@ -79,7 +81,7 @@ class KaliTransform extends Transform {
     PreparedInfo prepare(TransformInvocation invocation) {
         def preparedInfoBuilder = new PreparedInfo.Builder()
 
-        if (inlineSyntheticFieldAccessors) {
+        if (inlineSyntheticFieldAccessors || setFieldModifiers) {
             new Traverser() {
                 @Override
                 void processZipClass(ZipEntry entry, InputStream stream) {
@@ -147,14 +149,14 @@ class KaliTransform extends Transform {
 
     void processClass(InputStream classStream, File outputFile, PreparedInfo preparedInfo) {
         ClassReader classReader = new ClassReader(classStream)
-        ClassVisitor processor = new KaliClassVisitor(ignoreClasses, replacements, replacementsRegex, preparedInfo)
+        ClassVisitor processor = new KaliClassVisitor(ignoreClasses, replacements, replacementsRegex, setFieldModifiers, preparedInfo)
         classReader.accept(processor, 0)
         outputFile.bytes = processor.toByteArray()
     }
 
-    static preProcessClass(InputStream classStream, PreparedInfo.Builder builder) {
+    void preProcessClass(InputStream classStream, PreparedInfo.Builder builder) {
         def classReader = new ClassReader(classStream)
-        def transformer = new PrepareVisitor()
+        def transformer = new PrepareVisitor(setFieldModifiers.keySet())
 
         classReader.accept(transformer, 0)
 

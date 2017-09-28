@@ -1,18 +1,36 @@
 package ru.mail.gradle.plugin.kali
 
-import org.objectweb.asm.*
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.FieldVisitor
+import org.objectweb.asm.Handle
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.FieldInsnNode
 import org.objectweb.asm.tree.InsnList
 import org.objectweb.asm.tree.InsnNode
+import org.objectweb.asm.tree.LineNumberNode
+import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.VarInsnNode
+
+import static ru.mail.gradle.plugin.kali.VisitorUtils.fieldOwner
 
 class PrepareVisitor extends ClassVisitor {
 
     ClassInfo.Builder builder
 
-    String className
+    String humanReadableClassName
 
-    PrepareVisitor() {
+    Set<String> modifiableFields
+    Set<String> modifiableFieldClasses
+
+    PrepareVisitor(Set<String> modifiableFields) {
         super(Opcodes.ASM5)
+        this.modifiableFields = modifiableFields
+        modifiableFieldClasses = modifiableFields.collect { field ->
+            return fieldOwner(field)
+        }
     }
 
     @Override
@@ -20,7 +38,7 @@ class PrepareVisitor extends ClassVisitor {
         builder = new ClassInfo.Builder()
                 .setName(name)
                 .setSuperclass(superName)
-        className = name
+        humanReadableClassName = name.replace('/', '.')
         super.visit(version, access, name, signature, superName, interfaces)
     }
 
@@ -35,6 +53,94 @@ class PrepareVisitor extends ClassVisitor {
                     }
                 }
             }
+        } else if (modifiableFieldClasses.contains(humanReadableClassName) && (name == '<init>' || name == '<clinit>')) {
+            return new MethodNode(Opcodes.ASM5, access, name, desc, signature, exceptions) {
+                @Override
+                void visitEnd() {
+                    super.visitEnd()
+                    Map<String, List<AbstractInsnNode>> fieldInitializers = [:]
+                    ListIterator instructions = this.instructions.iterator()
+                    while (instructions.hasNext()) {
+                        //noinspection ChangeToOperator
+                        AbstractInsnNode instruction = (AbstractInsnNode) instructions.next()
+                        if (instruction.opcode == Opcodes.PUTFIELD || instruction.opcode == Opcodes.PUTSTATIC) {
+                            FieldInsnNode fieldInsn = instruction as FieldInsnNode
+                            def fieldId = "$humanReadableClassName.${fieldInsn.name}" as String
+                            if (!modifiableFields.contains(fieldId)) {
+                                continue
+                            }
+                            instructions.remove()
+                            int newOpcode = instruction.opcode == Opcodes.PUTSTATIC ? Opcodes.PUTFIELD : Opcodes.PUTSTATIC
+                            instruction = new FieldInsnNode(newOpcode, fieldInsn.owner, fieldInsn.name, fieldInsn.desc)
+                            List<AbstractInsnNode> fieldInitCode = [instruction] as List<AbstractInsnNode>
+                            while (instructions.hasPrevious()) {
+                                //noinspection ChangeToOperator
+                                instruction = (AbstractInsnNode) instructions.previous()
+                                if (isGettingThis(instruction)) {
+                                    continue
+                                }
+                                if (instruction instanceof LineNumberNode) {
+                                    break
+                                }
+                                fieldInitCode.add(0, instruction)
+                            }
+                            if (newOpcode == Opcodes.PUTFIELD) {
+                                fieldInitCode.add(0, createGettingThisInsn())
+                            }
+                            def previouslyFound = builder.getFieldInitializer(fieldInsn.name)
+                            if (previouslyFound) {
+                                if (differs(previouslyFound, fieldInitCode)) {
+                                    throw new IllegalStateException("$fieldId has different initializers in the various constructors")
+                                }
+                            } else {
+                                fieldInitializers[fieldInsn.name] = fieldInitCode
+                            }
+                        }
+                    }
+                    builder.addFieldInitializers(fieldInitializers)
+                    fieldInitializers.clear()
+                }
+
+                boolean differs(List<AbstractInsnNode> left, List<AbstractInsnNode> right) {
+                    if (left.size() != right.size()) {
+                        return true
+                    }
+                    for (int i = 0; i < left.size(); i++) {
+                        def leftInsn = left[i]
+                        def rightInsn = right[i]
+                        if (differs(leftInsn, rightInsn)) {
+                            return true
+                        }
+                    }
+                    return false
+                }
+
+                def differs(AbstractInsnNode left, AbstractInsnNode right) {
+                    if (left == null || right == null) {
+                        throw new NullPointerException()
+                    }
+                    if (left.class != right.class) {
+                        return true
+                    }
+                    def result = false
+                    left.class.declaredFields.each { field ->
+                        if (field.get(left) != field.get(right)) {
+                            result = true
+                            return false
+                        }
+                        return true
+                    }
+                    return result
+                }
+
+                private VarInsnNode createGettingThisInsn() {
+                    new VarInsnNode(Opcodes.ALOAD, 0)
+                }
+
+                boolean isGettingThis(AbstractInsnNode instruction) {
+                    instruction.opcode == Opcodes.ALOAD && ((VarInsnNode) instruction).var == 0
+                }
+            }
         }
         return null
     }
@@ -42,6 +148,10 @@ class PrepareVisitor extends ClassVisitor {
     @Override
     FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
         builder.addField(name, desc)
+        def fieldId = "$humanReadableClassName.$name" as String
+        if (modifiableFields.contains(fieldId)) {
+            builder.addFieldAccess(name, access)
+        }
         return null
     }
 

@@ -43,4 +43,5 @@ uploadArchives {
 clean {
     delete 'src/inlineTest/build'
     delete 'src/replaceTest/build'
+    delete 'src/fieldAccessTest/build'
 }

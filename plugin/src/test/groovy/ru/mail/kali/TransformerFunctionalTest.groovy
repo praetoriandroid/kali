@@ -5,6 +5,7 @@ import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Specification
 
+import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
 import static groovy.io.FileType.DIRECTORIES
@@ -49,6 +50,24 @@ class TransformerFunctionalTest extends Specification {
         callLog == ['acquire(100)', 'release()']
     }
 
+    def 'field access modified'() {
+        given:
+        def testDir = 'src/fieldAccessTest'
+
+        when:
+        def result = build(testDir)
+        ClassLoader classLoader = getBuildClassLoader(testDir)
+        def outerClass = classLoader.loadClass('com.example.OuterClass')
+        def innerClass = classLoader.loadClass('com.example.OuterClass$InnerClass')
+
+        then:
+        isSuccess(result)
+        (outerClass.declaredFields + innerClass.declaredFields).each { field ->
+            nonStaticBecomeStatic(field) || staticBecomeNonStatic(field)
+            Modifier.isPublic(field.modifiers)
+        }
+    }
+
     private static build(String testDir) {
         GradleRunner.create()
                 .withProjectDir(new File(testDir))
@@ -82,6 +101,14 @@ class TransformerFunctionalTest extends Specification {
         }
 
         return results.first()
+    }
+
+    private static boolean nonStaticBecomeStatic(Field field) {
+        !field.name.startsWith('static') && Modifier.isStatic(field.modifiers)
+    }
+
+    private static boolean staticBecomeNonStatic(Field field) {
+        field.name.startsWith('static') && !Modifier.isStatic(field.modifiers)
     }
 
 }

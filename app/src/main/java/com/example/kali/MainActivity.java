@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.View;
 import android.widget.Button;
-
 import com.example.kali.tmp.TmpActivity;
 
 import java.util.concurrent.TimeUnit;

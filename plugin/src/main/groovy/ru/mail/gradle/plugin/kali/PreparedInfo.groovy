@@ -34,6 +34,10 @@ final class PreparedInfo {
         classes[className]
     }
 
+    def allClasses() {
+        classes.keySet()
+    }
+
     AccessorInfo getAccessor(String className, String methodName, String methodDesc) {
         getClass(className)?.getAccessor(methodName, methodDesc)
     }
