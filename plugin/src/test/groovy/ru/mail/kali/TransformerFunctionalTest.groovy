@@ -1,6 +1,7 @@
 package ru.mail.kali
 
 import android.os.PowerManager
+import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Specification
 
@@ -9,47 +10,32 @@ import java.lang.reflect.Modifier
 import static groovy.io.FileType.DIRECTORIES
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-public class TransformerFunctionalTest extends Specification {
+class TransformerFunctionalTest extends Specification {
 
     def 'inliner makes specific fields public'() {
         given:
-        def testDir = new File('src/inlineTest')
+        def testDir = 'src/inlineTest'
 
         when:
-        def result = GradleRunner.create()
-                .withProjectDir(testDir)
-                .withArguments('transformClassesWithKaliForDebug')
-                .withPluginClasspath()
-                .build()
+        def result = build(testDir)
+        def classLoader = getBuildClassLoader(testDir)
+        def inheritedClass = classLoader.loadClass('com.example.InheritedClass')
+        def baseClass = classLoader.loadClass('com.example.another_package.BaseClass')
 
         then:
-        result.task(':transformClassesWithKaliForDebug').outcome == SUCCESS
-
-        ClassLoader classLoader = new TestClassLoader(getTransformerOutputDir(testDir.absolutePath));
-
-        def inheritedClass = classLoader.loadClass('com.example.InheritedClass')
-        assert Modifier.isPublic(inheritedClass.getDeclaredField('outerClassField').modifiers)
-        assert Modifier.isPrivate(inheritedClass.getDeclaredField('untouched').modifiers)
-
-        def baseClass = classLoader.loadClass('com.example.another_package.BaseClass')
-        assert Modifier.isPublic(baseClass.getDeclaredField('baseClassField').modifiers)
+        isSuccess(result)
+        Modifier.isPublic(inheritedClass.getDeclaredField('outerClassField').modifiers)
+        Modifier.isPrivate(inheritedClass.getDeclaredField('untouched').modifiers)
+        Modifier.isPublic(baseClass.getDeclaredField('baseClassField').modifiers)
     }
 
     def 'method calls replaced'() {
         given:
-        def testDir = new File('src/replaceTest')
+        def testDir = 'src/replaceTest'
 
         when:
-        def result = GradleRunner.create()
-                .withProjectDir(testDir)
-                .withArguments('transformClassesWithKaliForDebug')
-                .withPluginClasspath()
-                .build()
-
-        then:
-        result.task(':transformClassesWithKaliForDebug').outcome == SUCCESS
-
-        ClassLoader classLoader = new TestClassLoader(getTransformerOutputDir(testDir.absolutePath));
+        def result = build(testDir)
+        ClassLoader classLoader = getBuildClassLoader(testDir)
 
         def mockWakeLockClass = classLoader.loadClass('com.example.MockWakeLock')
         def callLog = []
@@ -57,10 +43,29 @@ public class TransformerFunctionalTest extends Specification {
         def wakeLockUserClass = classLoader.loadClass('com.example.WakeLockUser')
         def wakeLockUser = wakeLockUserClass.newInstance()
         wakeLockUser.useWakeLock(new PowerManager.WakeLock())
+
+        then:
+        isSuccess(result)
         callLog == ['acquire(100)', 'release()']
     }
 
-    def getTransformerOutputDir(String testRootDir) {
+    private static build(String testDir) {
+        GradleRunner.create()
+                .withProjectDir(new File(testDir))
+                .withArguments('transformClassesWithKaliForDebug')
+                .withPluginClasspath()
+                .build()
+    }
+
+    private static isSuccess(BuildResult result) {
+        result.task(':transformClassesWithKaliForDebug').outcome == SUCCESS
+    }
+
+    private static getBuildClassLoader(String testDir) {
+        new TestClassLoader(getTransformerOutputDir(testDir))
+    }
+
+    def static getTransformerOutputDir(String testRootDir) {
         def dir = new File("$testRootDir/build/intermediates/transforms/kali/debug/folders")
         def results = []
         dir.traverse (
