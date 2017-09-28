@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.2'
+        classpath 'com.android.tools.build:gradle:2.3.0'
         if (file(PREBUILT_PLUGIN_DIR).exists()) {
             classpath "ru.mail:android-kali:$thePluginVersion"
         }
