@@ -69,6 +69,8 @@ class PrepareVisitor extends ClassVisitor {
                             if (!modifiableFields.contains(fieldId)) {
                                 continue
                             }
+                            // This remove() and the one below are for skipping the already processed instructions when
+                            // the entire initializer will be collected and we will go forward again.
                             instructions.remove()
                             int newOpcode = instruction.opcode == Opcodes.PUTSTATIC ? Opcodes.PUTFIELD : Opcodes.PUTSTATIC
                             instruction = new FieldInsnNode(newOpcode, fieldInsn.owner, fieldInsn.name, fieldInsn.desc)
@@ -76,6 +78,7 @@ class PrepareVisitor extends ClassVisitor {
                             while (instructions.hasPrevious()) {
                                 //noinspection ChangeToOperator
                                 instruction = instructions.previous()
+                                instructions.remove()
                                 if (isGettingThis(instruction)) {
                                     continue
                                 }
