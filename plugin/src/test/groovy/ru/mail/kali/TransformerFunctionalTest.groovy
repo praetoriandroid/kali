@@ -107,6 +107,20 @@ class TransformerFunctionalTest extends Specification {
         innerInstance2.staticField == 'inner static'
     }
 
+    def 'missing static initializer is generated'() {
+        given:
+        def testDir = 'src/fieldAccessTest'
+
+        when:
+        def result = build(testDir)
+        ClassLoader classLoader = getBuildClassLoader(testDir)
+        def classWithoutStaticInitializer = classLoader.loadClass('com.example.ClassWithoutStaticInitializer')
+
+        then:
+        isSuccess(result)
+        classWithoutStaticInitializer.timestamp != 0
+    }
+
     private static build(String testDir) {
         GradleRunner.create()
                 .withProjectDir(new File(testDir))

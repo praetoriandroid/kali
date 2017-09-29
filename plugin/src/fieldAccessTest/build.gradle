@@ -37,5 +37,6 @@ kali {
             'com.example.OuterClass$InnerClass.field': 'public static',
             'com.example.OuterClass$InnerClass.staticField': 'public',
             'com.example.OuterClass$InnerClass.multiInited': 'public static',
+            'com.example.ClassWithoutStaticInitializer.timestamp': 'public static final',
     ]
 }
