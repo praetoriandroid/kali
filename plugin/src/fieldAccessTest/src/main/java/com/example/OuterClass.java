@@ -3,6 +3,7 @@ package com.example;
 public class OuterClass {
     private String field = "outer non-static";
     private static String staticField = "outer static";
+    private final long timestamp = System.currentTimeMillis();
 
     public static class InnerClass {
         private String field = "inner non-static";

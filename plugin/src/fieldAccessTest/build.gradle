@@ -33,6 +33,7 @@ kali {
     setFieldModifiers = [
             'com.example.OuterClass.field': 'public static',
             'com.example.OuterClass.staticField': 'public',
+            'com.example.OuterClass.timestamp': 'private static final',
             'com.example.OuterClass$InnerClass.field': 'public static',
             'com.example.OuterClass$InnerClass.staticField': 'public',
             'com.example.OuterClass$InnerClass.multiInited': 'public static',

@@ -101,6 +101,7 @@ class TransformerFunctionalTest extends Specification {
         isSuccess(result)
         outerClass.field == 'outer non-static'
         innerClass.field == 'inner non-static'
+        outerClass.timestamp != 0
         outerInstance.staticField == 'outer static'
         innerInstance1.staticField == 'inner static'
         innerInstance2.staticField == 'inner static'
