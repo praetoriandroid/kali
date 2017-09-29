@@ -59,10 +59,10 @@ class PrepareVisitor extends ClassVisitor {
                 void visitEnd() {
                     super.visitEnd()
                     Map<String, List<AbstractInsnNode>> fieldInitializers = [:]
-                    ListIterator instructions = this.instructions.iterator()
+                    ListIterator<AbstractInsnNode> instructions = this.instructions.iterator()
                     while (instructions.hasNext()) {
                         //noinspection ChangeToOperator
-                        AbstractInsnNode instruction = (AbstractInsnNode) instructions.next()
+                        AbstractInsnNode instruction = instructions.next()
                         if (instruction.opcode == Opcodes.PUTFIELD || instruction.opcode == Opcodes.PUTSTATIC) {
                             FieldInsnNode fieldInsn = instruction as FieldInsnNode
                             def fieldId = "$humanReadableClassName.${fieldInsn.name}" as String
@@ -75,7 +75,7 @@ class PrepareVisitor extends ClassVisitor {
                             List<AbstractInsnNode> fieldInitCode = [instruction] as List<AbstractInsnNode>
                             while (instructions.hasPrevious()) {
                                 //noinspection ChangeToOperator
-                                instruction = (AbstractInsnNode) instructions.previous()
+                                instruction = instructions.previous()
                                 if (isGettingThis(instruction)) {
                                     continue
                                 }

@@ -131,13 +131,13 @@ class KaliClassVisitor extends ClassVisitor {
                 void visitEnd() {
                     super.visitEnd()
 
-                    ListIterator editor = instructions.iterator()
+                    ListIterator<AbstractInsnNode> editor = instructions.iterator()
                     while (editor.hasNext()) {
-                        AbstractInsnNode instruction = (AbstractInsnNode) editor.next()
+                        AbstractInsnNode instruction = editor.next()
                         if (shouldRemoveAssignment(instruction)) {
                             editor.remove()
                             while (editor.hasPrevious()) {
-                                instruction = (AbstractInsnNode) editor.previous()
+                                instruction = editor.previous()
                                 editor.remove()
                                 if (instruction instanceof LineNumberNode) {
                                     break
