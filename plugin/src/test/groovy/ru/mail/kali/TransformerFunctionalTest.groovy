@@ -68,6 +68,44 @@ class TransformerFunctionalTest extends Specification {
         }
     }
 
+    def 'class with modified fields could be instantiated'() {
+        given:
+        def testDir = 'src/fieldAccessTest'
+
+        when:
+        def result = build(testDir)
+        ClassLoader classLoader = getBuildClassLoader(testDir)
+        def outerClass = classLoader.loadClass('com.example.OuterClass')
+        def innerClass = classLoader.loadClass('com.example.OuterClass$InnerClass')
+
+        then:
+        isSuccess(result)
+        outerClass.newInstance()
+        innerClass.newInstance()
+    }
+
+    def 'modified fields are properly initialized'() {
+        given:
+        def testDir = 'src/fieldAccessTest'
+
+        when:
+        def result = build(testDir)
+        ClassLoader classLoader = getBuildClassLoader(testDir)
+        def outerClass = classLoader.loadClass('com.example.OuterClass')
+        def innerClass = classLoader.loadClass('com.example.OuterClass$InnerClass')
+        def outerInstance = outerClass.newInstance()
+        def innerInstance1 = innerClass.newInstance()
+        def innerInstance2 = innerClass.newInstance(0)
+
+        then:
+        isSuccess(result)
+        outerClass.field == 'outer non-static'
+        innerClass.field == 'inner non-static'
+        outerInstance.staticField == 'outer static'
+        innerInstance1.staticField == 'inner static'
+        innerInstance2.staticField == 'inner static'
+    }
+
     private static build(String testDir) {
         GradleRunner.create()
                 .withProjectDir(new File(testDir))

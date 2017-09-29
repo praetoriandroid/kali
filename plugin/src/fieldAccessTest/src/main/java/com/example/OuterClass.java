@@ -1,8 +1,8 @@
 package com.example;
 
 public class OuterClass {
-    private String field = "non-static";
-    private static String staticField = "static";
+    private String field = "outer non-static";
+    private static String staticField = "outer static";
 
     public static class InnerClass {
         private String field = "inner non-static";
