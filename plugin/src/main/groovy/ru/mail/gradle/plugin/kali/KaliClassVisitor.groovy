@@ -171,7 +171,7 @@ class KaliClassVisitor extends ClassVisitor {
                         return false
                     }
                     FieldInsnNode fieldInsn = instruction as FieldInsnNode
-                    def fullFieldId = "$fieldInsn.owner.$fieldInsn.name" as String
+                    def fullFieldId = VisitorUtils.fieldId(fieldInsn.owner, fieldInsn.name)
                     return setFieldStaticAccess.containsKey(fullFieldId)
                 }
             }

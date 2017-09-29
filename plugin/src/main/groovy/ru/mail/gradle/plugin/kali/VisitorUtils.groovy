@@ -48,4 +48,12 @@ class VisitorUtils {
         return fieldId[fieldId.lastIndexOf('.') + 1..-1]
     }
 
+    static String humanReadableClassName(String className) {
+        className.replace('/', '.')
+    }
+
+    static String fieldId(String owner, String fieldName) {
+        "${humanReadableClassName(owner)}.$fieldName" as String
+    }
+
 }
