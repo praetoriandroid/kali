@@ -26,7 +26,7 @@ class PrepareVisitor extends ClassVisitor {
 
     @Override
     MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        if (isSynthetic(access) && !isBridge(access)) {
+        if (!isBridge(access)) {
             return new MethodAnalyzeVisitor(access, signature) {
                 @Override
                 void visitEnd() {
@@ -49,15 +49,15 @@ class PrepareVisitor extends ClassVisitor {
         builder.build()
     }
 
-    private static boolean isSynthetic(int access) {
+    static boolean isSynthetic(int access) {
         masks(access, Opcodes.ACC_SYNTHETIC)
     }
 
-    private static boolean isStatic(int access) {
-        masks(access, Opcodes.ACC_STATIC)
-    }
+//    private static boolean isStatic(int access) {
+//        masks(access, Opcodes.ACC_STATIC)
+//    }
 
-    private static boolean isBridge(int access) {
+    static boolean isBridge(int access) {
         masks(access, Opcodes.ACC_BRIDGE)
     }
 
@@ -89,9 +89,6 @@ class PrepareVisitor extends ClassVisitor {
             super(Opcodes.ASM5)
             this.acccess = access
             this.signature = signature
-            if (!isStatic(access)) {
-                skip()
-            }
         }
 
         @Override

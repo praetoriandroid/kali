@@ -88,7 +88,7 @@ class KaliClassVisitor extends ClassVisitor {
                 }
 
                 def accessor = preparedInfo.getAccessor(insnOwner, insnName, insnDesc)
-                if (accessor) {
+                if (accessor && !PrepareVisitor.isBridge(access) && !PrepareVisitor.isSynthetic(access)) {
                     showClassNameOnce()
                     logger.info "  Inline accessor invocation for: ${accessor.field.owner.replace('/', '.')}.$accessor.field.name"
                     accessor.accept(this)
