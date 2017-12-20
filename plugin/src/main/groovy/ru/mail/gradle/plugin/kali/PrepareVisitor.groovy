@@ -1,6 +1,11 @@
 package ru.mail.gradle.plugin.kali
 
-import org.objectweb.asm.*
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.FieldVisitor
+import org.objectweb.asm.Handle
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.FieldInsnNode
 import org.objectweb.asm.tree.InsnList
 import org.objectweb.asm.tree.InsnNode
@@ -11,8 +16,12 @@ class PrepareVisitor extends ClassVisitor {
 
     String className
 
-    PrepareVisitor() {
+    List<Replacement> replacements
+
+    PrepareVisitor(List<Replacement> replacements) {
         super(Opcodes.ASM5)
+
+        this.replacements = replacements
     }
 
     @Override
@@ -26,6 +35,8 @@ class PrepareVisitor extends ClassVisitor {
 
     @Override
     MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+        validateReplacements(access, name, desc)
+
         if (isSynthetic(access) && !isBridge(access)) {
             return new MethodAnalyzeVisitor(access, signature) {
                 @Override
@@ -37,6 +48,18 @@ class PrepareVisitor extends ClassVisitor {
             }
         }
         return null
+    }
+
+    def validateReplacements(int access, String methodName, String methodDesc) {
+        def isReplacementMethod = replacements.collect{ it.to }.find { replacement ->
+            def sameClass = replacement.owner == className
+            def sameMethodName = replacement.methodName == methodName
+            def descriptorMatches = !replacement.descriptor || replacement.descriptor == methodDesc
+            sameClass && sameMethodName && descriptorMatches
+        } as boolean
+        if (isReplacementMethod && !isStatic(access)) {
+            throw new IllegalArgumentException("Method $className.$methodName$methodDesc is not static and couldn't be used as a replacement")
+        }
     }
 
     @Override

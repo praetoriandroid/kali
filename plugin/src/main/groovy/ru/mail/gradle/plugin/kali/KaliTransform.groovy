@@ -152,9 +152,9 @@ class KaliTransform extends Transform {
         outputFile.bytes = processor.toByteArray()
     }
 
-    static preProcessClass(InputStream classStream, PreparedInfo.Builder builder) {
+    void preProcessClass(InputStream classStream, PreparedInfo.Builder builder) {
         def classReader = new ClassReader(classStream)
-        def transformer = new PrepareVisitor()
+        def transformer = new PrepareVisitor(replacements)
 
         classReader.accept(transformer, 0)
 
