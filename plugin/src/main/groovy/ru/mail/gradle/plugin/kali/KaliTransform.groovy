@@ -15,14 +15,11 @@ class KaliTransform extends Transform {
 
     static final LIBRARY_SCOPES = EnumSet.of(
             QualifiedContent.Scope.PROJECT,
-            QualifiedContent.Scope.PROJECT_LOCAL_DEPS
     )
 
     static final APPLICATION_SCOPES = EnumSet.of(
             QualifiedContent.Scope.PROJECT,
-            QualifiedContent.Scope.PROJECT_LOCAL_DEPS,
             QualifiedContent.Scope.SUB_PROJECTS,
-            QualifiedContent.Scope.SUB_PROJECTS_LOCAL_DEPS,
             QualifiedContent.Scope.EXTERNAL_LIBRARIES
     )
 
@@ -179,9 +176,7 @@ class KaliTransform extends Transform {
     @Override
     Set<QualifiedContent.Scope> getReferencedScopes() {
         return EnumSet.of(
-                QualifiedContent.Scope.PROJECT_LOCAL_DEPS,
                 QualifiedContent.Scope.SUB_PROJECTS,
-                QualifiedContent.Scope.SUB_PROJECTS_LOCAL_DEPS,
                 QualifiedContent.Scope.EXTERNAL_LIBRARIES,
                 QualifiedContent.Scope.TESTED_CODE,
                 QualifiedContent.Scope.PROVIDED_ONLY
