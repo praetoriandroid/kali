@@ -2,10 +2,6 @@ buildscript {
     repositories {
         jcenter()
     }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.2'
-    }
 }
 
 apply plugin: 'groovy'
@@ -13,8 +9,8 @@ apply plugin: 'maven'
 apply plugin: 'java-gradle-plugin'
 
 repositories {
-    mavenCentral()
     jcenter()
+    google()
 }
 
 dependencies {
@@ -22,7 +18,7 @@ dependencies {
     compile localGroovy()
 
     compile 'org.ow2.asm:asm:5.1'
-    compile 'com.android.tools.build:gradle:2.2.3'
+    compile 'com.android.tools.build:gradle:3.0.1'
 
     testCompile ('org.spockframework:spock-core:1.1-groovy-2.4-rc-3') {
         exclude module: 'groovy-all'

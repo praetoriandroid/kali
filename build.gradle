@@ -5,5 +5,5 @@ task clean(type: Delete) {
 }
 
 ext {
-    thePluginVersion = '1.1.5'
+    thePluginVersion = '1.1.6'
 }
